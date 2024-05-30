@@ -19,7 +19,7 @@ cmake_dependent_option(BUILD_TESTING
 
 option(BUILD_SHARED_LIBS    "Build the library as a shared (dynamically-linked) " OFF)
 
-file(cthread_files ${CMAKE_CURRENT_SOURCE_DIR}/cthread.c)
+set(cthread_files ${CMAKE_CURRENT_SOURCE_DIR}/cthread.c)
 
 if(BUILD_SHARED_LIBS)
     add_library(cthread SHARED ${cthread_files})
@@ -28,7 +28,7 @@ else()
 endif()
 
 if(UNIX)
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g)
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -fomit-frame-pointer -Wno-return-type")
     find_package(Threads)
     target_link_libraries(coroutine PUBLIC ${CMAKE_THREAD_LIBS_INIT})
@@ -72,4 +72,4 @@ include(CPack)
 
 set(CMAKE_INSTALL_CONFIG_NAME ${CMAKE_BUILD_TYPE})
 install(TARGETS ${cthread} DESTINATION lib)
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/ DESTINATION include )

@@ -123,10 +123,8 @@ void run_thread_test(void) {
     }
 }
 
-#if !defined(_WIN32) || defined(C11THREADS_PTHREAD_WIN32) || !defined(C11THREADS_OLD_WIN32API)
 int hold_mutex_for_one_second(void *arg) {
     struct timespec dur;
-
 
     CHK_THRD(mtx_lock(&mtx));
 
@@ -172,7 +170,7 @@ void run_timed_mtx_test(void) {
     }
 
     CHK_THRD(mtx_unlock(&mtx2));
-  //  cnd_destroy(&cnd);
+    cnd_destroy(&cnd);
     mtx_destroy(&mtx2);
 
     CHK_EXPECTED(xtime_get(&ts, TIME_UTC), TIME_UTC);
@@ -200,7 +198,6 @@ void run_timed_mtx_test(void) {
     mtx_destroy(&mtx);
     CHK_THRD(thrd_join(thread, NULL));
 }
-#endif
 
 int my_cnd_thread_func(void *arg) {
     int thread_num;
