@@ -8,6 +8,9 @@ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 # Add support for standard installation
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+cmake_dependent_option(BUILD_TESTING
+  "Build the unit tests when BUILD_TESTING is enabled and we are the root project" OFF
+  "BUILD_TESTING;CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 
 #################################
 # Target Arch                   #

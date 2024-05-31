@@ -75,9 +75,6 @@ extern "C" {
   #define CTHREAD_NORETURN
 #endif
 
-#define TSS_DTOR_ITERATIONS PTHREAD_DESTRUCTOR_ITERATIONS
-#define EMULATED_THREADS_TSS_DTOR_SLOTNUM 64  // see TLS_MINIMUM_AVAILABLE
-
 /* Function return values */
 enum
 {

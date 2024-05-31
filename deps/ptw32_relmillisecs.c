@@ -18,17 +18,17 @@
  *      code distribution. The list can also be seen at the
  *      following World Wide Web location:
  *      http://sources.redhat.com/pthreads-win32/contributors.html
- * 
+ *
  *      This library is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU Lesser General Public
  *      License as published by the Free Software Foundation; either
  *      version 2 of the License, or (at your option) any later version.
- * 
+ *
  *      This library is distributed in the hope that it will be useful,
  *      but WITHOUT ANY WARRANTY; without even the implied warranty of
  *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  *      Lesser General Public License for more details.
- * 
+ *
  *      You should have received a copy of the GNU Lesser General Public
  *      License along with this library in the file COPYING.LIB;
  *      if not, write to the Free Software Foundation, Inc.,
@@ -44,12 +44,18 @@
 #include "pthread.h"
 #include "implement.h"
 
+#if defined(__TINYC__)
+static const long long NANOSEC_PER_SEC = 1000000000;
+static const long long NANOSEC_PER_MILLISEC = 1000000;
+static const long long MILLISEC_PER_SEC = 1000;
+#else
 static const int64_t NANOSEC_PER_SEC = 1000000000;
 static const int64_t NANOSEC_PER_MILLISEC = 1000000;
 static const int64_t MILLISEC_PER_SEC = 1000;
+#endif
 
 #if defined(PTW32_BUILD_INLINED)
-INLINE 
+INLINE
 #endif /* PTW32_BUILD_INLINED */
 DWORD
 ptw32_relmillisecs (const struct timespec * abstime)

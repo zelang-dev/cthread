@@ -123,8 +123,11 @@ void run_thread_test(void) {
     }
 }
 
+#if !defined(_WIN32) || defined(C11THREADS_PTHREAD_WIN32) || !defined(C11THREADS_OLD_WIN32API)
 int hold_mutex_for_one_second(void *arg) {
     struct timespec dur;
+
+    (void)arg;
 
     CHK_THRD(mtx_lock(&mtx));
 
@@ -139,16 +142,6 @@ int hold_mutex_for_one_second(void *arg) {
 
     CHK_THRD(mtx_unlock(&mtx));
 
-    return 0;
-}
-
-int xtime_get(struct timespec *xt, int base) {
-    if (!xt) return 0;
-    if (base == TIME_UTC) {
-        xt->tv_sec = time(NULL);
-        xt->tv_nsec = 0;
-        return base;
-    }
     return 0;
 }
 
@@ -168,12 +161,11 @@ void run_timed_mtx_test(void) {
     while (!flag) {
         CHK_THRD(cnd_wait(&cnd, &mtx2));
     }
-
     CHK_THRD(mtx_unlock(&mtx2));
     cnd_destroy(&cnd);
     mtx_destroy(&mtx2);
 
-    CHK_EXPECTED(xtime_get(&ts, TIME_UTC), TIME_UTC);
+    CHK_EXPECTED(timespec_get(&ts, TIME_UTC), TIME_UTC);
     ts.tv_nsec += 500000000;
     if (ts.tv_nsec >= 1000000000) {
         ++ts.tv_sec;
@@ -186,7 +178,7 @@ void run_timed_mtx_test(void) {
     dur.tv_nsec = 0;
     CHK_EXPECTED(thrd_sleep(&dur), 0);
 
-    CHK_EXPECTED(xtime_get(&ts, TIME_UTC), TIME_UTC);
+    CHK_EXPECTED(timespec_get(&ts, TIME_UTC), TIME_UTC);
     ts.tv_nsec += 500000000;
     if (ts.tv_nsec >= 1000000000) {
         ++ts.tv_sec;
@@ -198,6 +190,7 @@ void run_timed_mtx_test(void) {
     mtx_destroy(&mtx);
     CHK_THRD(thrd_join(thread, NULL));
 }
+#endif
 
 int my_cnd_thread_func(void *arg) {
     int thread_num;
@@ -257,12 +250,9 @@ void run_cnd_test(void) {
     /* No guarantees, but this might unblock two threads. */
     puts("main thread: sending cnd_signal() twice");
     CHK_THRD(cnd_signal(&cnd));
-    puts("here 2");
     CHK_THRD(cnd_signal(&cnd));
-    puts("here 3");
     CHK_THRD(thrd_sleep(&dur));
 
-    puts("here 4");
     CHK_THRD(mtx_lock(&mtx));
     while (flag == NUM_THREADS + 1) {
         CHK_THRD(cnd_wait(&cnd2, &mtx));
