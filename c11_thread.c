@@ -1,34 +1,10 @@
 
-#include "cthread.h"
+#include "c11_thread.h"
 
-/* Platform specific includes */
-#if defined(_CTHREAD_POSIX_)
-#include <signal.h>
-#include <sched.h>
-#include <unistd.h>
-#include <sys/time.h>
-#include <errno.h>
-#include <limits.h>
-#elif defined(_CTHREAD_WIN32_)
-#include <windows.h>
-#include <sys/timeb.h>
-#include <time.h>
+#if defined(_CTHREAD_WIN32_)
 static DWORD time2msec(const struct timespec *ms) {
     return (DWORD)((ms->tv_sec * 1000u) + (ms->tv_nsec / 1000000));
 }
-#endif
-
-#include <stdlib.h>
-
-/* Standard, good-to-have defines */
-#ifndef NULL
-#define NULL (void*)0
-#endif
-#ifndef TRUE
-#define TRUE 1
-#endif
-#ifndef FALSE
-#define FALSE 0
 #endif
 
 int mtx_init(mtx_t *mtx, int type) {
@@ -122,7 +98,7 @@ static void *_thrd_wrapper_function(void *aArg) {
     arg = ti->mArg;
 
     /* The thread is responsible for freeing the startup information */
-    free((void *)ti);
+    C11_FREE((void *)ti);
 
     /* Call the actual client thread function */
     res = fun(arg);
@@ -133,7 +109,7 @@ static void *_thrd_wrapper_function(void *aArg) {
 int thrd_create(thrd_t *thr, thrd_start_t func, void *arg) {
     /* Fill out the thread startup information (passed to the thread wrapper,
        which will eventually free it) */
-    _thread_start_info *ti = (_thread_start_info *)malloc(sizeof(_thread_start_info));
+    _thread_start_info *ti = (_thread_start_info *)C11_MALLOC(sizeof(_thread_start_info));
     if (ti == NULL) {
         return thrd_nomem;
     }
@@ -142,7 +118,7 @@ int thrd_create(thrd_t *thr, thrd_start_t func, void *arg) {
 
     /* Create the thread */
     if (pthread_create(thr, NULL, _thrd_wrapper_function, (void *)ti) != 0) {
-        free(ti);
+        C11_FREE(ti);
         return thrd_error;
     }
 

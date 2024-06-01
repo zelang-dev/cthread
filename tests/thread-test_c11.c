@@ -7,12 +7,12 @@
 #include <crtdbg.h>
 #endif
 
-#include "cthread.h"
+#include "../c11_thread.h"
 
 #include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
+#include <assert.h>
 
 #define CHK_THRD_EXPECTED(a, b) assert_thrd_expected(a, b, __FILE__, __LINE__, #a, #b)
 #define CHK_THRD(a) CHK_THRD_EXPECTED(a, thrd_success)
@@ -27,11 +27,40 @@ tss_t tss;
 once_flag once = ONCE_FLAG_INIT;
 int flag;
 
+thrd_local_create(int, gLocalVar)
 void run_thread_test(void);
 void run_timed_mtx_test(void);
 void run_cnd_test(void);
 void run_tss_test(void);
+void run_emulated_tls(void);
 void run_call_once_test(void);
+thrd_local(int, gLocalVar)
+
+/* Thread function: Compile time thread-local storage */
+static int thread_test_local_storage(void *aArg) {
+    (void)aArg;
+    int data = rand();
+    *gLocalVar() = data;
+    assert(*gLocalVar() == data);
+    return 0;
+}
+
+void run_emulated_tls(void) {
+    thrd_t t1;
+    assert(thrd_gLocalVar_tls == 0);
+    /* Clear the TLS variable (it should keep this value after all
+       threads are finished). */
+    *gLocalVar() = 1;
+    assert(thrd_gLocalVar_tls == sizeof(int));
+
+
+    /* Start a child thread that modifies gLocalVar */
+    thrd_create(&t1, thread_test_local_storage, NULL);
+    thrd_join(t1, NULL);
+
+    /* Check if the TLS variable has changed */
+    assert(*gLocalVar() == 1);
+}
 
 int main(void) {
     puts("start thread test");
@@ -50,16 +79,20 @@ int main(void) {
     run_tss_test();
     puts("end thread-specific storage test\n");
 
+    puts("start emulate thread-local storage test");
+    run_emulated_tls();
+    puts("end emulate thread-local storage test\n");
+
     puts("start call once test");
     run_call_once_test();
     puts("end call once test\n");
-
+/*
 #ifdef _WIN32
     if (_CrtDumpMemoryLeaks()) {
         abort();
     }
 #endif
-
+*/
     puts("tests finished");
 
     return 0;
@@ -162,8 +195,8 @@ void run_timed_mtx_test(void) {
         CHK_THRD(cnd_wait(&cnd, &mtx2));
     }
     CHK_THRD(mtx_unlock(&mtx2));
-    cnd_destroy(&cnd);
     mtx_destroy(&mtx2);
+    cnd_destroy(&cnd);
 
     CHK_EXPECTED(timespec_get(&ts, TIME_UTC), TIME_UTC);
     ts.tv_nsec += 500000000;

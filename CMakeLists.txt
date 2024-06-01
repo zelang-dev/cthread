@@ -19,7 +19,7 @@ cmake_dependent_option(BUILD_TESTING
 
 option(BUILD_SHARED_LIBS    "Build the library as a shared (dynamically-linked) " OFF)
 
-set(cthread_files ${CMAKE_CURRENT_SOURCE_DIR}/cthread.c)
+set(cthread_files ${CMAKE_CURRENT_SOURCE_DIR}/c11_thread.c ${CMAKE_CURRENT_SOURCE_DIR}/c11_pool.c)
 
 if(BUILD_SHARED_LIBS)
     add_library(cthread SHARED ${cthread_files})
@@ -45,10 +45,9 @@ endif()
 
 set_property(TARGET cthread PROPERTY POSITION_INDEPENDENT_CODE True)
 
+enable_testing()
 if(BUILD_TESTING)
-	enable_testing()
-    add_executable(test-cthread test-cthread.c)
-    target_link_libraries(test-cthread cthread)
+	add_subdirectory(tests)
 endif()
 
 set(_fmt TGZ)

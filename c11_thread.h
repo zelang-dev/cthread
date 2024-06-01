@@ -5,75 +5,117 @@
 extern "C" {
 #endif
 
-/**
-* @file
-* @mainpage CThread API Reference
-*
-* @section intro_sec Introduction
-* CThread is a minimal, portable implementation of basic threading
-* classes for C.
-*
-* They closely mimic the functionality and naming of the C11 standard, and
-* should be easily replaceable with the corresponding standard variants.
-*
-* @section port_sec Portability
-* The Win32 variant uses the native Win32 API for implementing the thread
-* classes, while for other systems, the POSIX threads API (pthread) is used.
-*
-* For more detailed information, browse the different sections of this
-* documentation. A good place to start is:
-* cthread.h.
-*/
-
-/* Which platform are we on? */
+    /* Which platform are we on? */
 #if !defined(_CTHREAD_PLATFORM_DEFINED_)
-  #if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
-    #define _CTHREAD_WIN32_
-  #else
-    #define _CTHREAD_POSIX_
-  #endif
-  #define _CTHREAD_PLATFORM_DEFINED_
+#if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
+#define _CTHREAD_WIN32_
+#else
+#define _CTHREAD_POSIX_
+#endif
+#define _CTHREAD_PLATFORM_DEFINED_
 #endif
 
 /* Activate some POSIX functionality (e.g. clock_gettime and recursive mutexes) */
 #if defined(_CTHREAD_POSIX_)
-  #undef _FEATURES_H
-  #if !defined(_GNU_SOURCE)
-    #define _GNU_SOURCE
-  #endif
-  #if !defined(_POSIX_C_SOURCE) || ((_POSIX_C_SOURCE - 0) < 199309L)
-    #undef _POSIX_C_SOURCE
-    #define _POSIX_C_SOURCE 199309L
-  #endif
-  #if !defined(_XOPEN_SOURCE) || ((_XOPEN_SOURCE - 0) < 500)
-    #undef _XOPEN_SOURCE
-    #define _XOPEN_SOURCE 500
-  #endif
-  #define _XPG6
+#undef _FEATURES_H
+#if !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+#if !defined(_POSIX_C_SOURCE) || ((_POSIX_C_SOURCE - 0) < 199309L)
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 199309L
+#endif
+#if !defined(_XOPEN_SOURCE) || ((_XOPEN_SOURCE - 0) < 500)
+#undef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 500
+#endif
+#define _XPG6
 #endif
 
 /* Generic includes */
 #include <pthread.h>
+#include "c11_pool.h"
 
 /* Platform specific includes */
 #if defined(_CTHREAD_POSIX_)
-    #include <sys/time.h>
+#include <signal.h>
+#include <sched.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <errno.h>
+#include <limits.h>
 #elif defined(_CTHREAD_WIN32_)
-    #include <time.h>
+#include <windows.h>
+#include <sys/timeb.h>
+#include <time.h>
+#endif
+
+#if !defined(C11_MALLOC) || !defined(C11_FREE) || !defined(C11_REALLOC)|| !defined(C11_CALLOC)
+#include <stdlib.h>
+#define C11_MALLOC malloc
+#define C11_FREE free
+#define C11_REALLOC realloc
+#define C11_CALLOC calloc
 #endif
 
 #ifndef TIME_UTC
-    #define TIME_UTC 1
+#define TIME_UTC 1
 #endif
 
 /* Compiler-specific information */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-  #define CTHREAD_NORETURN _Noreturn
+#define CTHREAD_NORETURN _Noreturn
 #elif defined(__GNUC__)
-  #define CTHREAD_NORETURN __attribute__((__noreturn__))
+#define CTHREAD_NORETURN __attribute__((__noreturn__))
 #else
-  #define CTHREAD_NORETURN
+#define CTHREAD_NORETURN
 #endif
+
+ /* Public API qualifier. */
+#ifndef C_API
+#define C_API extern
+#endif
+
+#define thrd_local_get(type, var)           \
+        type *var##(void) {                 \
+            if (thrd_##var##_tls == 0) {	\
+                thrd_##var##_tls = sizeof(type);    \
+                if (tss_create(&thrd_##var##_tss, C11_FREE) == thrd_success)	\
+                    atexit(var##_delete);   \
+            }								\
+            void *ptr = tss_get(thrd_##var##_tss);  \
+            if (ptr == NULL) {                      \
+                ptr = C11_MALLOC(thrd_##var##_tls); \
+                if (ptr == NULL)		    \
+                    goto err;			    \
+                if ((tss_set(thrd_##var##_tss, ptr)) != thrd_success)	\
+                    goto err;			    \
+            }                               \
+            return (type *)ptr;             \
+        err:                                \
+            return NULL;                    \
+        }
+
+#define thrd_local_delete(type, var)        \
+        void var##_delete(void) {           \
+            tss_delete(thrd_##var##_tss);   \
+        }
+
+/* Initialize and setup thread local storage `var name` as functions. */
+#define thrd_local(type, var)           \
+        int thrd_##var##_tls = 0;       \
+        tss_t thrd_##var##_tss = 0;     \
+        thrd_local_delete(type, var)    \
+        thrd_local_get(type, var)
+
+#define thrd_local_proto(type, var, prefix) \
+        prefix int thrd_##var##_tls;        \
+        prefix tss_t thrd_##var##_tss;      \
+        prefix type *var##(void);           \
+        prefix void var##_delete(void);
+
+/* Creates a compile time thread local storage variable */
+#define thrd_local_create(type, var) thrd_local_proto(type, var, C_API)
 
 /* Function return values */
 enum
