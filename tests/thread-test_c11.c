@@ -38,25 +38,36 @@ thrd_local(int, gLocalVar)
 
 /* Thread function: Compile time thread-local storage */
 static int thread_test_local_storage(void *aArg) {
-    (void)aArg;
-    int data = rand();
+    int thread = *(int *)aArg;
+    C11_FREE(aArg);
+
+    int data = thread + rand();
     *gLocalVar() = data;
+    printf("thread #%d, gLocalVar is: %d\n", thread, *gLocalVar());
     assert(*gLocalVar() == data);
     return 0;
 }
 
+#define THREAD_COUNT 5
+
 void run_emulated_tls(void) {
-    thrd_t t1;
+    thrd_t t[THREAD_COUNT];
     assert(thrd_gLocalVar_tls == 0);
     /* Clear the TLS variable (it should keep this value after all
        threads are finished). */
     *gLocalVar() = 1;
     assert(thrd_gLocalVar_tls == sizeof(int));
 
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        int *n = C11_MALLOC(sizeof * n);  // Holds a thread serial number
+            *n = i;
+        /* Start a child thread that modifies gLocalVar */
+        thrd_create(t + i, thread_test_local_storage, n);
+    }
 
-    /* Start a child thread that modifies gLocalVar */
-    thrd_create(&t1, thread_test_local_storage, NULL);
-    thrd_join(t1, NULL);
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        thrd_join(t[i], NULL);
+    }
 
     /* Check if the TLS variable has changed */
     assert(*gLocalVar() == 1);
