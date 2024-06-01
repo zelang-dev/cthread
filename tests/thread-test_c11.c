@@ -7,7 +7,7 @@
 #include <crtdbg.h>
 #endif
 
-#include "../c11_thread.h"
+#include "../cthread.h"
 
 #include <stddef.h>
 #include <stdio.h>

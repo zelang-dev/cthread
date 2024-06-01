@@ -1,6 +1,50 @@
 #ifndef _CTHREAD_H_
 #define _CTHREAD_H_
 
+#if defined(_WIN32) || defined(_WIN64)
+    #if !defined(__cplusplus)
+        #define __STDC__ 1
+    #endif
+#endif
+
+#ifdef __TINYC__
+    #define emulate_tls 1
+#elif !defined(thread_local) /* User can override thread_local for obscure compilers */
+     /* Running in multi-threaded environment */
+    #if defined(__STDC__) /* Compiling as C Language */
+      #if defined(_MSC_VER) /* Don't rely on MSVC's C11 support */
+        #define thread_local __declspec(thread)
+      #elif __STDC_VERSION__ < 201112L /* If we are on C90/99 */
+        #if defined(__clang__) || defined(__GNUC__) /* Clang and GCC */
+          #define thread_local __thread
+        #else /* Otherwise, we ignore the directive (unless user provides their own) */
+          #define thread_local
+          #define emulate_tls 1
+        #endif
+      #elif __APPLE__ && __MACH__
+        #define thread_local __thread
+      #else /* C11 and newer define thread_local in threads.h */
+        #define HAS_C11_THREADS 1
+        #include <threads.h>
+      #endif
+    #elif defined(__cplusplus) /* Compiling as C++ Language */
+      #if __cplusplus < 201103L /* thread_local is a C++11 feature */
+        #if defined(_MSC_VER)
+          #define thread_local __declspec(thread)
+        #elif defined(__clang__) || defined(__GNUC__)
+          #define thread_local __thread
+        #else /* Otherwise, we ignore the directive (unless user provides their own) */
+          #define thread_local
+          #define emulate_tls 1
+        #endif
+      #else /* In C++ >= 11, thread_local in a builtin keyword */
+        /* Don't do anything */
+      #endif
+      #define HAS_C11_THREADS 1
+    #endif
+#endif
+
+#ifndef HAS_C11_THREADS
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -34,7 +78,6 @@ extern "C" {
 
 /* Generic includes */
 #include <pthread.h>
-#include "c11_pool.h"
 
 /* Platform specific includes */
 #if defined(_CTHREAD_POSIX_)
@@ -50,18 +93,6 @@ extern "C" {
 #include <time.h>
 #endif
 
-#if !defined(C11_MALLOC) || !defined(C11_FREE) || !defined(C11_REALLOC)|| !defined(C11_CALLOC)
-#include <stdlib.h>
-#define C11_MALLOC malloc
-#define C11_FREE free
-#define C11_REALLOC realloc
-#define C11_CALLOC calloc
-#endif
-
-#ifndef TIME_UTC
-#define TIME_UTC 1
-#endif
-
 /* Compiler-specific information */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define CTHREAD_NORETURN _Noreturn
@@ -70,52 +101,6 @@ extern "C" {
 #else
 #define CTHREAD_NORETURN
 #endif
-
- /* Public API qualifier. */
-#ifndef C_API
-#define C_API extern
-#endif
-
-#define thrd_local_get(type, var)           \
-        type *var##(void) {                 \
-            if (thrd_##var##_tls == 0) {	\
-                thrd_##var##_tls = sizeof(type);    \
-                if (tss_create(&thrd_##var##_tss, C11_FREE) == thrd_success)	\
-                    atexit(var##_delete);   \
-            }								\
-            void *ptr = tss_get(thrd_##var##_tss);  \
-            if (ptr == NULL) {                      \
-                ptr = C11_MALLOC(thrd_##var##_tls); \
-                if (ptr == NULL)		    \
-                    goto err;			    \
-                if ((tss_set(thrd_##var##_tss, ptr)) != thrd_success)	\
-                    goto err;			    \
-            }                               \
-            return (type *)ptr;             \
-        err:                                \
-            return NULL;                    \
-        }
-
-#define thrd_local_delete(type, var)        \
-        void var##_delete(void) {           \
-            tss_delete(thrd_##var##_tss);   \
-        }
-
-/* Initialize and setup thread local storage `var name` as functions. */
-#define thrd_local(type, var)           \
-        int thrd_##var##_tls = 0;       \
-        tss_t thrd_##var##_tss = 0;     \
-        thrd_local_delete(type, var)    \
-        thrd_local_get(type, var)
-
-#define thrd_local_proto(type, var, prefix) \
-        prefix int thrd_##var##_tls;        \
-        prefix tss_t thrd_##var##_tss;      \
-        prefix type *var##(void);           \
-        prefix void var##_delete(void);
-
-/* Creates a compile time thread local storage variable */
-#define thrd_local_create(type, var) thrd_local_proto(type, var, C_API)
 
 /* Function return values */
 enum
@@ -382,9 +367,136 @@ int tss_set(tss_t key, void *val);
  */
 #define call_once(flag,func) pthread_once(flag,func)
 
+#ifdef __cplusplus
+}
+#endif
+#endif /* HAS_C11_THREADS */
+#endif /* _CTHREAD_H_ */
+
+#ifndef _CTHREAD_EXTRA_H_
+#define _CTHREAD_EXTRA_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if !defined(C11_MALLOC) || !defined(C11_FREE) || !defined(C11_REALLOC)|| !defined(C11_CALLOC)
+    #include <stdlib.h>
+    #define C11_MALLOC malloc
+    #define C11_FREE free
+    #define C11_REALLOC realloc
+    #define C11_CALLOC calloc
+#endif
+
+#ifndef TIME_UTC
+#define TIME_UTC 1
+#endif
+
+/* Public API qualifier. */
+#ifndef C_API
+    #define C_API extern
+#endif
+
+#define thrd_local_get(type, var)           \
+        type* var(void) {                   \
+            if (thrd_##var##_tls == 0) {	\
+                thrd_##var##_tls = sizeof(type);    \
+                if (tss_create(&thrd_##var##_tss, C11_FREE) == thrd_success)	\
+                    atexit(var##_delete);   \
+            }								\
+            void *ptr = tss_get(thrd_##var##_tss);  \
+            if (ptr == NULL) {                      \
+                ptr = C11_MALLOC(thrd_##var##_tls); \
+                if (ptr == NULL)		    \
+                    goto err;			    \
+                if ((tss_set(thrd_##var##_tss, ptr)) != thrd_success)	\
+                    goto err;			    \
+            }                               \
+            return (type *)ptr;             \
+        err:                                \
+            return NULL;                    \
+        }
+
+#define thrd_local_delete(type, var)        \
+        void var##_delete(void) {           \
+            void *ptr = tss_get(thrd_##var##_tss);  \
+            if (ptr != NULL)                \
+                C11_FREE(ptr);              \
+            tss_delete(thrd_##var##_tss);   \
+            thrd_##var##_tss = 0;           \
+            thrd_##var##_tls = 0;           \
+        }
+
+/* Initialize and setup thread local storage `var name` as functions. */
+#define thrd_local(type, var)           \
+        int thrd_##var##_tls = 0;       \
+        tss_t thrd_##var##_tss = 0;     \
+        thrd_local_delete(type, var)    \
+        thrd_local_get(type, var)
+
+#define thrd_local_proto(type, var, prefix) \
+        prefix int thrd_##var##_tls;        \
+        prefix tss_t thrd_##var##_tss;      \
+        prefix type* var(void);       \
+        prefix void var##_delete(void);
+
+/* Creates a compile time thread local storage variable */
+#define thrd_local_create(type, var) thrd_local_proto(type, var, C_API)
+
+#ifndef MAX_THREADS
+    #define MAX_THREADS 32
+    #define MAX_QUEUE 256
+#endif
+
+typedef struct pool_s thrd_pool_t;
+typedef enum {
+    pool_invalid        = -1,
+    pool_lock_failure   = -2,
+    pool_queue_full     = -3,
+    pool_shutdown       = -4,
+    pool_thread_failure = -5
+} pool_error_t;
+
+typedef enum {
+    pool_graceful       = 1
+} thrd_destroy_flags_t;
+
+/**
+ * @brief Creates a thrd_pool_t object.
+ * @param thread_count Number of worker threads.
+ * @param queue_size   Size of the queue.
+ * @return a newly created thread pool or NULL
+ */
+thrd_pool_t *thrd_pool(int thread_count, int queue_size);
+
+/**
+ * @brief add a new task in the queue of a thread pool
+ * @param pool     Thread pool to which add the task.
+ * @param function Pointer to the function that will perform the task.
+ * @param argument Argument to be passed to the function.
+ * @return 0 if all goes well, negative values in case of error (@see
+ * pool_error_t for codes).
+ */
+int thrd_add(thrd_pool_t *pool, void (*routine)(void *), void *arg);
+
+/**
+ * @brief Stops and destroys a thread pool.
+ * @param pool  Thread pool to destroy.
+ * @param flags Flags for shutdown
+ *
+ * Known values for flags are 0 (default) and pool_graceful in
+ * which case the thread pool doesn't accept any new tasks but
+ * processes all pending tasks before shutdown.
+ */
+int thrd_destroy(thrd_pool_t *pool, int flags);
+
+/**
+ * @brief Wait until all the tasks are finished in the thread pool.
+ * @param pool Thread pool.
+ */
+void thrd_wait(thrd_pool_t *pool);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _CTHREAD_H_ */
+#endif /* _CTHREAD_EXTRA_H_ */

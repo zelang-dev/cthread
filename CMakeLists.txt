@@ -19,7 +19,7 @@ cmake_dependent_option(BUILD_TESTING
 
 option(BUILD_SHARED_LIBS    "Build the library as a shared (dynamically-linked) " OFF)
 
-set(cthread_files ${CMAKE_CURRENT_SOURCE_DIR}/c11_thread.c ${CMAKE_CURRENT_SOURCE_DIR}/c11_pool.c)
+set(cthread_files ${CMAKE_CURRENT_SOURCE_DIR}/cthread.c ${CMAKE_CURRENT_SOURCE_DIR}/cthread_pool.c)
 
 if(BUILD_SHARED_LIBS)
     add_library(cthread SHARED ${cthread_files})
@@ -31,7 +31,7 @@ if(UNIX)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -fomit-frame-pointer -Wno-return-type")
     find_package(Threads)
-    target_link_libraries(coroutine PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(cthread PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /DPTW32_STATIC_LIB")
     add_definitions(-DPTW32_STATIC_LIB -D_CRT_SECURE_NO_DEPRECATE)

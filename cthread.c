@@ -1,6 +1,5 @@
-
-#include "c11_thread.h"
-
+#include "cthread.h"
+#ifndef HAS_C11_THREADS
 #if defined(_CTHREAD_WIN32_)
 static DWORD time2msec(const struct timespec *ms) {
     return (DWORD)((ms->tv_sec * 1000u) + (ms->tv_nsec / 1000000));
@@ -156,8 +155,8 @@ int thrd_join(thrd_t thr, int *res) {
 int thrd_sleep(const struct timespec *ms) {
 #if !defined(_CTHREAD_WIN32_)
     struct timespec req;
-    req.tv_sec = ms->sec;
-    req.tv_nsec = ms->nsec;
+    req.tv_sec = ms->tv_sec;
+    req.tv_nsec = ms->tv_nsec;
     nanosleep(&req, NULL);
 #else
     Sleep(time2msec(ms));
@@ -193,3 +192,4 @@ int tss_set(tss_t key, void *val) {
 
     return thrd_success;
 }
+#endif /* HAS_C11_THREADS */
