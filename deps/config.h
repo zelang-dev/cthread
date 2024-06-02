@@ -186,6 +186,10 @@
 #define __PTW32_CONFIG_MSVC7
 #endif /*  __PTW32_CONFIG_H */
 
+#if defined(__TINYC__)
+typedef long long int64_t;
+typedef unsigned long long uint64_t;
+#endif
 #if defined(__TINYC__) && (defined(WIN64) || defined(_WIN64))
 #include <atomic.h>
 #endif
