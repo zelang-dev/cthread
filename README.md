@@ -3,7 +3,7 @@
 
 Using [Pthreads](https://en.wikipedia.org/wiki/Pthreads), or [Pthreads4w](http://sourceforge.net/projects/pthreads4w/).
 
-The **Windows** build in **_deps_** folder, _this fork has ABI differences,_ see original [README.md](https://github.com/GerHobbelt/pthread-win32/blob/master/README.md).
+The **Windows** build in **_deps_** folder, _this fork has ABI differences,_ see original [README.md](https://github.com/GerHobbelt/pthread-win32/blob/master/README.md). And this build replaced standard **malloc/stdlib.h** with forked [rpmalloc](https://github.com/zelang-dev/rpmalloc) that has no dependency on `thread_local`.
 
 > This branch has some changes to be able to be compiled using [Tiny C compiler](https://github.com/zelang-dev/tinycc).
 
