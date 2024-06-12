@@ -234,4 +234,5 @@ typedef unsigned _int64 uint64_t;
 
 #endif // RC_INVOKED
 
+#include "../rpmalloc.h"
 #endif	/* !PTW32_H */

@@ -37,6 +37,13 @@ endif()
 #################################
 add_definitions(-DPTW32_BUILD_INLINED)
 
+if(UNIX)
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -D ENABLE_ASSERTS=1")
+else()
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /D ENABLE_ASSERTS=1 ")
+endif()
+
+add_definitions(-DENABLE_OVERRIDE=1)
 if(MSVC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /errorReport:none /nologo")
   # C++ Exceptions

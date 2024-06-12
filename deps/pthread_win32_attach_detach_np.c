@@ -44,9 +44,12 @@
 #include "pthread.h"
 #include "implement.h"
 #include <tchar.h>
-#if ! (defined(__GNUC__) || defined (PTW32_CONFIG_MSVC7) || defined(WINCE))
+ /*
+ #if ! (defined(__GNUC__) || defined (PTW32_CONFIG_MSVC7) || defined(WINCE))
 # include <stdlib.h>
 #endif
+*/
+#include "../rpmalloc.h"
 
 /*
  * Handle to quserex.dll
