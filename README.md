@@ -14,7 +14,6 @@ This package also implements emulated **Thread-local storage** via ***thrd_local
 _example.h_
 ```h
 #include "cthread.h"
-#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 thrd_local_create(int, gLocalVar);

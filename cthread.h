@@ -52,11 +52,11 @@ extern "C" {
     /* Which platform are we on? */
 #if !defined(_CTHREAD_PLATFORM_DEFINED_)
 #if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
-#define _CTHREAD_WIN32_
+    #define _CTHREAD_WIN32_
 #else
-#define _CTHREAD_POSIX_
+    #define _CTHREAD_POSIX_
 #endif
-#define _CTHREAD_PLATFORM_DEFINED_
+    #define _CTHREAD_PLATFORM_DEFINED_
 #endif
 
 /* Activate some POSIX functionality (e.g. clock_gettime and recursive mutexes) */
@@ -81,25 +81,25 @@ extern "C" {
 
 /* Platform specific includes */
 #if defined(_CTHREAD_POSIX_)
-#include <signal.h>
-#include <sched.h>
-#include <unistd.h>
-#include <sys/time.h>
-#include <errno.h>
-#include <limits.h>
+    #include <signal.h>
+    #include <sched.h>
+    #include <unistd.h>
+    #include <sys/time.h>
+    #include <errno.h>
+    #include <limits.h>
 #elif defined(_CTHREAD_WIN32_)
-#include <windows.h>
-#include <sys/timeb.h>
-#include <time.h>
+    #include <windows.h>
+    #include <sys/timeb.h>
+    #include <time.h>
 #endif
 
 /* Compiler-specific information */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-#define CTHREAD_NORETURN _Noreturn
+    #define CTHREAD_NORETURN _Noreturn
 #elif defined(__GNUC__)
-#define CTHREAD_NORETURN __attribute__((__noreturn__))
+    #define CTHREAD_NORETURN __attribute__((__noreturn__))
 #else
-#define CTHREAD_NORETURN
+    #define CTHREAD_NORETURN
 #endif
 
 /* Function return values */
@@ -380,8 +380,8 @@ int tss_set(tss_t key, void *val);
 extern "C" {
 #endif
 
+#include "rpmalloc.h"
 #if !defined(C11_MALLOC) || !defined(C11_FREE) || !defined(C11_REALLOC)|| !defined(C11_CALLOC)
-    #include <stdlib.h>
     #define C11_MALLOC malloc
     #define C11_FREE free
     #define C11_REALLOC realloc
@@ -403,6 +403,8 @@ extern "C" {
                 thrd_##var##_tls = sizeof(type);    \
                 if (tss_create(&thrd_##var##_tss, C11_FREE) == thrd_success)	\
                     atexit(var##_delete);   \
+                else                        \
+                    goto err;			    \
             }								\
             void *ptr = tss_get(thrd_##var##_tss);  \
             if (ptr == NULL) {                      \
@@ -417,14 +419,16 @@ extern "C" {
             return NULL;                    \
         }
 
-#define thrd_local_delete(type, var)        \
-        void var##_delete(void) {           \
-            void *ptr = tss_get(thrd_##var##_tss);  \
-            if (ptr != NULL)                \
-                C11_FREE(ptr);              \
-            tss_delete(thrd_##var##_tss);   \
-            thrd_##var##_tss = 0;           \
-            thrd_##var##_tls = 0;           \
+#define thrd_local_delete(type, var)            \
+        void var##_delete(void) {               \
+            if(thrd_##var##_tls == 0) {         \
+                void *ptr = tss_get(thrd_##var##_tss);  \
+                if (ptr != NULL)                \
+                    C11_FREE(ptr);              \
+                tss_delete(thrd_##var##_tss);   \
+                thrd_##var##_tss = 0;           \
+                thrd_##var##_tls = 0;           \
+            }                                   \
         }
 
 /* Initialize and setup thread local storage `var name` as functions. */
@@ -437,7 +441,7 @@ extern "C" {
 #define thrd_local_proto(type, var, prefix) \
         prefix int thrd_##var##_tls;        \
         prefix tss_t thrd_##var##_tss;      \
-        prefix type* var(void);       \
+        prefix type* var(void);             \
         prefix void var##_delete(void);
 
 /* Creates a compile time thread local storage variable */

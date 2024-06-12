@@ -193,3 +193,5 @@ int tss_set(tss_t key, void *val) {
     return thrd_success;
 }
 #endif /* HAS_C11_THREADS */
+
+#include "cthread_pool.c"

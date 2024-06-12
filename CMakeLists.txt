@@ -13,14 +13,23 @@ set(BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/build)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BUILD_DIR})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/built")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
 cmake_dependent_option(BUILD_TESTING
   "Build the unit tests when BUILD_TESTING is enabled and we are the root project" OFF
   "BUILD_TESTING;CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 
 option(BUILD_SHARED_LIBS    "Build the library as a shared (dynamically-linked) " OFF)
 
-set(cthread_files ${CMAKE_CURRENT_SOURCE_DIR}/cthread.c ${CMAKE_CURRENT_SOURCE_DIR}/cthread_pool.c)
+if(UNIX)
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -D ENABLE_ASSERTS=1")
+else()
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /D ENABLE_ASSERTS=1 ")
+endif()
 
+add_definitions(-DENABLE_OVERRIDE=1)
+set(cthread_files rpmalloc.c cthread.c)
 if(BUILD_SHARED_LIBS)
     add_library(cthread SHARED ${cthread_files})
 else()

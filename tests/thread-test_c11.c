@@ -1,12 +1,5 @@
 /* Test program for cthread. */
 
-/* Needed for memory leak detection. */
-#ifdef _WIN32
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-#endif
-
 #include "../cthread.h"
 
 #include <stddef.h>
@@ -27,14 +20,14 @@ tss_t tss;
 once_flag once = ONCE_FLAG_INIT;
 int flag;
 
-thrd_local_create(int, gLocalVar)
+thread_storage_create(int, gLocalVar)
 void run_thread_test(void);
 void run_timed_mtx_test(void);
 void run_cnd_test(void);
 void run_tss_test(void);
 void run_emulated_tls(void);
 void run_call_once_test(void);
-thrd_local(int, gLocalVar)
+thread_storage(int, gLocalVar)
 
 /* Thread function: Compile time thread-local storage */
 static int thread_test_local_storage(void *aArg) {
@@ -52,11 +45,11 @@ static int thread_test_local_storage(void *aArg) {
 
 void run_emulated_tls(void) {
     thrd_t t[THREAD_COUNT];
-    assert(thrd_gLocalVar_tls == 0);
+    assert(rpmalloc_gLocalVar_tls == 0);
     /* Clear the TLS variable (it should keep this value after all
        threads are finished). */
     *gLocalVar() = 1;
-    assert(thrd_gLocalVar_tls == sizeof(int));
+    assert(rpmalloc_gLocalVar_tls == sizeof(int));
 
     for (int i = 0; i < THREAD_COUNT; i++) {
         int *n = C11_MALLOC(sizeof * n);  // Holds a thread serial number
@@ -97,13 +90,7 @@ int main(void) {
     puts("start call once test");
     run_call_once_test();
     puts("end call once test\n");
-/*
-#ifdef _WIN32
-    if (_CrtDumpMemoryLeaks()) {
-        abort();
-    }
-#endif
-*/
+
     puts("tests finished");
 
     return 0;
