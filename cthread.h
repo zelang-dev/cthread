@@ -49,7 +49,7 @@
 extern "C" {
 #endif
 
-    /* Which platform are we on? */
+/* Which platform are we on? */
 #if !defined(_CTHREAD_PLATFORM_DEFINED_)
 #if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
     #define _CTHREAD_WIN32_
@@ -62,17 +62,17 @@ extern "C" {
 /* Activate some POSIX functionality (e.g. clock_gettime and recursive mutexes) */
 #if defined(_CTHREAD_POSIX_)
 #undef _FEATURES_H
-#if !defined(_GNU_SOURCE)
-#define _GNU_SOURCE
-#endif
-#if !defined(_POSIX_C_SOURCE) || ((_POSIX_C_SOURCE - 0) < 199309L)
-#undef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 199309L
-#endif
-#if !defined(_XOPEN_SOURCE) || ((_XOPEN_SOURCE - 0) < 500)
-#undef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 500
-#endif
+    #if !defined(_GNU_SOURCE)
+        #define _GNU_SOURCE
+    #endif
+    #if !defined(_POSIX_C_SOURCE) || ((_POSIX_C_SOURCE - 0) < 199309L)
+        #undef _POSIX_C_SOURCE
+        #define _POSIX_C_SOURCE 199309L
+    #endif
+    #if !defined(_XOPEN_SOURCE) || ((_XOPEN_SOURCE - 0) < 500)
+        #undef _XOPEN_SOURCE
+        #define _XOPEN_SOURCE 500
+    #endif
 #define _XPG6
 #endif
 
@@ -397,14 +397,42 @@ extern "C" {
     #define C_API extern
 #endif
 
-#define thrd_local_get(type, var)           \
+#ifndef C11_INLINE
+  #ifdef _MSC_VER
+    #define C11_INLINE __forceinline
+  #elif defined(__GNUC__)
+    #if defined(__STRICT_ANSI__)
+      #define C11_INLINE __inline__ __attribute__((always_inline))
+    #else
+      #define C11_INLINE inline __attribute__((always_inline))
+    #endif
+  #elif defined(__BORLANDC__) || defined(__DMC__) || defined(__SC__) || defined(__WATCOMC__) || defined(__LCC__) ||  defined(__DECC)
+    #define C11_INLINE __inline
+  #else /* No inline support. */
+    #define C11_INLINE
+  #endif
+#endif
+
+#ifndef C11_NO_INLINE
+  #ifdef __GNUC__
+    #define C11_NO_INLINE __attribute__((noinline))
+  #elif defined(_MSC_VER)
+    #define C11_NO_INLINE __declspec(noinline)
+  #else
+    #define C11_NO_INLINE
+  #endif
+#endif
+
+#ifndef thrd_local
+#ifdef emulate_tls
+#   define thrd_local_get(type, var)        \
         type* var(void) {                   \
             if (thrd_##var##_tls == 0) {	\
                 thrd_##var##_tls = sizeof(type);    \
                 if (tss_create(&thrd_##var##_tss, C11_FREE) == thrd_success)	\
                     atexit(var##_delete);   \
                 else                        \
-                    goto err;			    \
+                      goto err;			    \
             }								\
             void *ptr = tss_get(thrd_##var##_tss);  \
             if (ptr == NULL) {                      \
@@ -419,9 +447,9 @@ extern "C" {
             return NULL;                    \
         }
 
-#define thrd_local_delete(type, var)            \
+#   define thrd_local_delete(type, var)         \
         void var##_delete(void) {               \
-            if(thrd_##var##_tls == 0) {         \
+            if (thrd_##var##_tls == 0) {        \
                 void *ptr = tss_get(thrd_##var##_tss);  \
                 if (ptr != NULL)                \
                     C11_FREE(ptr);              \
@@ -431,24 +459,46 @@ extern "C" {
             }                                   \
         }
 
-/* Initialize and setup thread local storage `var name` as functions. */
-#define thrd_local(type, var)           \
-        int thrd_##var##_tls = 0;       \
-        tss_t thrd_##var##_tss = 0;     \
-        thrd_local_delete(type, var)    \
+    /* Initialize and setup thread local storage `var name` as functions. */
+#   define thrd_local(type, var)            \
+        static type thrd_##var##_buffer;    \
+        int thrd_##var##_tls = 0;           \
+        tss_t thrd_##var##_tss = 0;         \
+        thrd_local_delete(type, var)        \
         thrd_local_get(type, var)
 
-#define thrd_local_proto(type, var, prefix) \
+#   define thrd_local_proto(type, var, prefix) \
         prefix int thrd_##var##_tls;        \
         prefix tss_t thrd_##var##_tss;      \
         prefix type* var(void);             \
         prefix void var##_delete(void);
 
-/* Creates a compile time thread local storage variable */
-#define thrd_local_create(type, var) thrd_local_proto(type, var, C_API)
+#   define thrd_local_return(type, var)    return (type *)tss_get(thrd_##var##_tss);
+
+    /* Creates a compile time thread local storage variable */
+#   define thrd_local_create(type, var) thrd_local_proto(type, var, C_API)
+#else
+#   define thrd_local_return(type, var)    return (type)thrd_##var##_tls;
+#   define thrd_local_get(type, var)        \
+        C11_INLINE type var(void) {         \
+            thrd_local_return(type, var)    \
+        }
+
+#   define thrd_local(type, var)                        \
+        static thread_local type thrd_##var##_buffer;   \
+        thread_local type thrd_##var##_tls = NULL;      \
+        thrd_local_get(type, var)
+
+#   define thrd_local_proto(type, var, prefix)      \
+        prefix thread_local type thrd_##var##_tls;  \
+        prefix type var(void);
+
+#   define thrd_local_create(type, var)    thrd_local_proto(type, var, C_API)
+#endif
+#endif /* thrd_local */
 
 #ifndef MAX_THREADS
-    #define MAX_THREADS 32
+    #define MAX_THREADS 64
     #define MAX_QUEUE 256
 #endif
 

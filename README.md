@@ -3,27 +3,27 @@
 
 Using [Pthreads](https://en.wikipedia.org/wiki/Pthreads), or [Pthreads4w](http://sourceforge.net/projects/pthreads4w/).
 
-The **Windows** build in **_deps_** folder, _this fork has ABI differences,_ see original [README.md](https://github.com/GerHobbelt/pthread-win32/blob/master/README.md). And this build replaced standard **malloc/stdlib.h** with forked [rpmalloc](https://github.com/zelang-dev/rpmalloc) that has no dependency on `thread_local`.
+The **Windows** build in **_deps_** folder, _this fork has ABI differences,_ see original [README.md](https://github.com/GerHobbelt/pthread-win32/blob/master/README.md). And this build and all general memory allocations based on standard **malloc/stdlib.h** replaced with forked [rpmalloc](https://github.com/zelang-dev/rpmalloc) that has no dependency on `thread_local`.
 
 > This branch has some changes to be able to be compiled using [Tiny C compiler](https://github.com/zelang-dev/tinycc).
 
 **CThread** is a minimal, portable implementation of basic threading classes for C. They closely mimic the functionality and naming of the [C11 standard](https://en.cppreference.com/w/c/thread), and should be easily replaceable with the corresponding standard variants.
 
-This package also implements emulated **Thread-local storage** via ***thrd_local(type, variable)*** macro as:
+The `malloc` replacement [rpmalloc](https://github.com/zelang-dev/rpmalloc) package also implements emulated **Thread-local storage** via macro ***thread_storage(type, variable)*** as:
 
 _example.h_
 ```h
 #include "cthread.h"
 #include <stdio.h>
 #include <assert.h>
-thrd_local_create(int, gLocalVar);
+thread_storage_create(int, gLocalVar);
 ```
 _example.c_
 ```c
 #include "example.h"
 #define THREAD_COUNT 5
 
-thrd_local(int, gLocalVar)
+thread_storage(int, gLocalVar)
 
 static int thread_local_storage(void *aArg) {
     int thread = *(int *)aArg;
@@ -58,6 +58,8 @@ int main(void) {
     return 0;
 }
 ```
+> This package implements ***thrd_local(type, variable)*** macro, same behavior as above, but
+> _will not emulate_ if feature is _available_ in your compiler, should be used for cross compatibility calling.
 
 ## Thread pool implementation
 
