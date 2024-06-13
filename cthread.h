@@ -7,7 +7,8 @@
     #endif
 #endif
 
-#ifdef __TINYC__
+#if defined(__TINYC__) || defined(USE_EMULATED_TLS)
+    #undef emulate_tls
     #define emulate_tls 1
 #elif !defined(thread_local) /* User can override thread_local for obscure compilers */
      /* Running in multi-threaded environment */
@@ -478,7 +479,7 @@ extern "C" {
     /* Creates a compile time thread local storage variable */
 #   define thrd_local_create(type, var) thrd_local_proto(type, var, C_API)
 #else
-#   define thrd_local_return(type, var)    return (type)thrd_##var##_tls;
+#   define thrd_local_return(type, var)    return thrd_##var##_tls;
 #   define thrd_local_get(type, var)        \
         C11_INLINE type var(void) {         \
             thrd_local_return(type, var)    \
