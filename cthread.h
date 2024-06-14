@@ -479,22 +479,22 @@ extern "C" {
     /* Creates a compile time thread local storage variable */
 #   define thrd_local_create(type, var) thrd_local_proto(type, var, C_API)
 #else
-#   define thrd_local_return(type, var)    return thrd_##var##_tls;
+#   define thrd_local_return(type, var)    return (type *)thrd_##var##_tls;
 #   define thrd_local_get(type, var)        \
-        C11_INLINE type var(void) {         \
+        C11_INLINE type* var(void) {        \
             thrd_local_return(type, var)    \
         }
 
 #   define thrd_local(type, var)                        \
         static thread_local type thrd_##var##_buffer;   \
-        thread_local type thrd_##var##_tls = NULL;      \
+        thread_local type* thrd_##var##_tls = NULL;     \
         thrd_local_get(type, var)
 
 #   define thrd_local_proto(type, var, prefix)      \
-        prefix thread_local type thrd_##var##_tls;  \
-        prefix type var(void);
+        prefix thread_local type* thrd_##var##_tls; \
+        prefix type* var(void);
 
-#   define thrd_local_create(type, var)    thrd_local_proto(type, var, C_API)
+#   define thrd_local_create(type, var) thrd_local_proto(type, var, C_API)
 #endif
 #endif /* thrd_local */
 
