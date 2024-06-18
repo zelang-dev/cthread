@@ -136,7 +136,7 @@ int tfunc(void *arg) {
 
     dur.tv_sec = 1;
     dur.tv_nsec = 0;
-    CHK_EXPECTED(thrd_sleep(&dur), 0);
+    CHK_EXPECTED(thrd_sleep(&dur, NULL), 0);
 
     printf("thread %d done\n", num);
     return 0;
@@ -169,7 +169,7 @@ int hold_mutex_for_one_second(void *arg) {
 
     dur.tv_sec = 1;
     dur.tv_nsec = 0;
-    CHK_EXPECTED(thrd_sleep(&dur), 0);
+    CHK_EXPECTED(thrd_sleep(&dur, NULL), 0);
 
     CHK_THRD(mtx_unlock(&mtx));
 
@@ -207,7 +207,7 @@ void run_timed_mtx_test(void) {
 
     dur.tv_sec = 1;
     dur.tv_nsec = 0;
-    CHK_EXPECTED(thrd_sleep(&dur), 0);
+    CHK_EXPECTED(thrd_sleep(&dur, NULL), 0);
 
     CHK_EXPECTED(timespec_get(&ts, TIME_UTC), TIME_UTC);
     ts.tv_nsec += 500000000;
@@ -266,12 +266,12 @@ void run_cnd_test(void) {
     /* No guarantees, but this might unblock a thread. */
     puts("main thread: cnd_signal()");
     CHK_THRD(cnd_signal(&cnd));
-    CHK_THRD(thrd_sleep(&dur));
+    CHK_THRD(thrd_sleep(&dur, NULL));
 
     /* No guarantees, but this might unblock all threads. */
     puts("main thread: cnd_broadcast()");
     CHK_THRD(cnd_broadcast(&cnd));
-    CHK_THRD(thrd_sleep(&dur));
+    CHK_THRD(thrd_sleep(&dur, NULL));
 
     CHK_THRD(mtx_lock(&mtx));
     flag = NUM_THREADS + 1;
@@ -282,7 +282,7 @@ void run_cnd_test(void) {
     puts("main thread: sending cnd_signal() twice");
     CHK_THRD(cnd_signal(&cnd));
     CHK_THRD(cnd_signal(&cnd));
-    CHK_THRD(thrd_sleep(&dur));
+    CHK_THRD(thrd_sleep(&dur, NULL));
 
     CHK_THRD(mtx_lock(&mtx));
     while (flag == NUM_THREADS + 1) {
