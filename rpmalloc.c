@@ -200,8 +200,9 @@
 #include <string.h>
 #include <errno.h>
 
-#if defined(_WIN32) && (!defined(BUILD_DYNAMIC_LINK) || !BUILD_DYNAMIC_LINK)
+#if defined(_WIN32)
 #include <fibersapi.h>
+#include <winnt.h>
 #endif
 
 #if PLATFORM_POSIX
@@ -291,11 +292,7 @@ int rpmalloc_tls_create(tls_t key, tls_dtor_t dtor) {
     if (!key) return -1;
 
     key->tss_key = TlsAlloc();
-#if defined(_WIN32) && (!defined(BUILD_DYNAMIC_LINK) || !BUILD_DYNAMIC_LINK)
-    key->fls_key = FlsAlloc(dtor);
-#else
-    key->fls_key = 0;
-#endif
+    key->fls_key = FlsAlloc((PFLS_CALLBACK_FUNCTION)dtor);
     key->terminated = 0;
     return (key->tss_key != 0xFFFFFFFF) ? 0 : -1;
 }
@@ -304,7 +301,6 @@ void rpmalloc_tls_delete(tls_t key) {
     if (key->terminated == 0) {
         key->terminated = 1;
         TlsFree(key->tss_key);
-        if (key->fls_key != 0)
         FlsFree(key->fls_key);
 
         key->fls_key = 0;
@@ -2959,8 +2955,8 @@ rpmalloc_initialize_config(const rpmalloc_config_t* config) {
 	_memory_config.span_map_count = _memory_span_map_count;
 	_memory_config.enable_huge_pages = _memory_huge_pages;
 
-#if defined(_WIN32) && (!defined(BUILD_DYNAMIC_LINK) || !BUILD_DYNAMIC_LINK)
-    if (rpmalloc_tls_create(_memory_thread_heap, _rpmalloc_thread_destructor) != 0)
+#if defined(_WIN32)
+    if (rpmalloc_tls_create(_memory_thread_heap, (tls_dtor_t)_rpmalloc_thread_destructor) != 0)
         return -1;
 #else
     if (rpmalloc_tls_create(_memory_thread_heap, _rpmalloc_heap_release_raw_fc) != 0)
@@ -3643,6 +3639,7 @@ rpmalloc_get_heap_for_ptr(void* ptr)
 static void rp_override_init(void) {
     if (!_rpmalloc_initialized) {
         rpmalloc_initialize();
+        atexit(rpmalloc_finalize);
     } else if (!rpmalloc_is_thread_initialized()) {
         rpmalloc_thread_initialize();
     }

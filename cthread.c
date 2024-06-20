@@ -62,7 +62,7 @@ int mtx_timedlock(mtx_t *mtx, const struct timespec *ts) {
         }
 
         nanosleep(&dur, NULL);
-}
+    }
 #endif
 
     if (rt == 0)
