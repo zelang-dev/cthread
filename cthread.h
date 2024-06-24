@@ -548,7 +548,7 @@ int thrd_add(thrd_pool_t *pool, void (*routine)(void *), void *arg);
  * @param pool  Thread pool to destroy.
  * @param flags Flags for shutdown
  *
- * Known values for flags are 0 (default) and pool_graceful in
+ * Known values for flags are 0 (default) and `pool_graceful` in
  * which case the thread pool doesn't accept any new tasks but
  * processes all pending tasks before shutdown.
  */

@@ -33,12 +33,14 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Added %d tasks\n", tasks);
 
     while ((tasks / 2) > done) {
-
         usleep(5);
     }
+
     thrd_wait(pool);
     assert(thrd_destroy(pool, 0) == 0);
     fprintf(stderr, "Did %d tasks\n", done);
+
+    mtx_destroy(&lock);
 
     return 0;
 }
