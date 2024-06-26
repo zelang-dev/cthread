@@ -91,8 +91,8 @@ extern "C" {
 #elif defined(_CTHREAD_WIN32_)
     #include <windows.h>
     #include <sys/timeb.h>
-    #include <time.h>
 #endif
+#include <time.h>
 
 /* Compiler-specific information */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
