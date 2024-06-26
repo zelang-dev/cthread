@@ -405,32 +405,6 @@ extern "C" {
     #define C_API extern
 #endif
 
-#ifndef C11_INLINE
-  #ifdef _MSC_VER
-    #define C11_INLINE __forceinline
-  #elif defined(__GNUC__)
-    #if defined(__STRICT_ANSI__)
-      #define C11_INLINE __inline__ __attribute__((always_inline))
-    #else
-      #define C11_INLINE inline __attribute__((always_inline))
-    #endif
-  #elif defined(__BORLANDC__) || defined(__DMC__) || defined(__SC__) || defined(__WATCOMC__) || defined(__LCC__) ||  defined(__DECC)
-    #define C11_INLINE __inline
-  #else /* No inline support. */
-    #define C11_INLINE
-  #endif
-#endif
-
-#ifndef C11_NO_INLINE
-  #ifdef __GNUC__
-    #define C11_NO_INLINE __attribute__((noinline))
-  #elif defined(_MSC_VER)
-    #define C11_NO_INLINE __declspec(noinline)
-  #else
-    #define C11_NO_INLINE
-  #endif
-#endif
-
 #ifndef thrd_local
 #ifdef emulate_tls
 #   define thrd_local_get(type, var)        \

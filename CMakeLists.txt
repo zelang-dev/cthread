@@ -1,8 +1,14 @@
 cmake_minimum_required(VERSION 2.8...3.14)
 
-project(cthread LANGUAGES C)
+project(
+    cthread
+    VERSION 4.0.3
+    DESCRIPTION "Emulated C11 threads and thread pool, with custom malloc replacement."
+    HOMEPAGE_URL "https://github.com/zelang-dev/cthread"
+    LANGUAGES C
+)
 
-set(C_STANDARD 89)
+set(CMAKE_C_STANDARD 90)
 
 include(CMakeDependentOption)
 include(GNUInstallDirs)
@@ -29,12 +35,6 @@ cmake_dependent_option(BUILD_TESTING
 
 option(BUILD_SHARED_LIBS    "Build the library as a shared (dynamically-linked) " OFF)
 
-if(UNIX)
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -D ENABLE_ASSERTS=1")
-else()
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /D ENABLE_ASSERTS=1 ")
-endif()
-
 add_definitions(-DENABLE_OVERRIDE=1)
 set(cthread_files rpmalloc.c cthread.c)
 if(BUILD_SHARED_LIBS)
@@ -44,11 +44,12 @@ else()
 endif()
 
 if(UNIX)
-    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -D ENABLE_ASSERTS=1 ")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -fomit-frame-pointer -Wno-return-type")
     find_package(Threads)
     target_link_libraries(cthread PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 else()
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /D ENABLE_ASSERTS=1 ")
     add_definitions(-DPTW32_CLEANUP_SEH -D_CRT_SECURE_NO_DEPRECATE)
     add_definitions("/wd4244 /wd4267 /wd4033 /wd4715")
 	add_subdirectory(deps)
@@ -81,7 +82,7 @@ set(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE 1)
 set(CPACK_VERBATIM_VARIABLES YES)
 
 set(CPACK_PACKAGE_VENDOR "https://github.com/zelang-dev/cthread")
-set(CPACK_PACKAGE_VERSION 4.0.0)
+set(CPACK_PACKAGE_VERSION 4.0.3)
 include(CPack)
 
 set(CMAKE_INSTALL_CONFIG_NAME ${CMAKE_BUILD_TYPE})
