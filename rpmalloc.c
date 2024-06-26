@@ -214,6 +214,10 @@ extern int madvise(caddr_t, size_t, int);
 #endif
 #include <errno.h>
 
+#if defined(ENABLE_ASSERTS) || defined(ENABLE_STATISTICS)
+#  include <stdio.h>
+#endif
+
 #if ENABLE_ASSERTS
 #  undef NDEBUG
 #  if defined(_MSC_VER) && !defined(_DEBUG)
@@ -235,9 +239,6 @@ extern int madvise(caddr_t, size_t, int);
 	} while (0)
 #else
 #  define rpmalloc_assert(truth, message) do {} while(0)
-#endif
-#if ENABLE_STATISTICS
-#  include <stdio.h>
 #endif
 
 //////
