@@ -27,10 +27,7 @@ int mtx_lock(mtx_t *mtx) {
     return pthread_mutex_lock(mtx) == 0 ? thrd_success : thrd_error;
 }
 
-#ifdef __MACH__
-#include <mach/clock.h>
-#include <mach/mach.h>
-
+#if defined(__APPLE__) || defined(__MACH__)
 int timespec_get(struct timespec *ts, int base) {
     clock_serv_t cclock;
     mach_timespec_t mts;

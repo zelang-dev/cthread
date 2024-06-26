@@ -381,6 +381,12 @@ int tss_set(tss_t key, void *val);
 #endif /* HAS_C11_THREADS */
 #endif /* _CTHREAD_H_ */
 
+#if defined(__APPLE__) || defined(__MACH__)
+#include <mach/clock.h>
+#include <mach/mach.h>
+int timespec_get(struct timespec *ts, int base);
+#endif
+
 #ifndef _CTHREAD_EXTRA_H_
 #define _CTHREAD_EXTRA_H_
 

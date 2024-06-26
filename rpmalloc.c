@@ -338,7 +338,11 @@ FORCEINLINE int rpmalloc_tls_set(tls_t key, void *val) {
 }
 
 void rpmalloc_shutdown(void) {
-    if (!rpmalloc_is_thread_initialized())
+    rp_free(rpmalloc_tls_get(_memory_thread_heap));
+    TlsFree(_memory_thread_heap);
+    rp_free(rpmalloc_tls_get(fls_key));
+    FlsFree(fls_key);
+    if (rpmalloc_is_thread_initialized())
         rpmalloc_finalize();
 }
 #else
