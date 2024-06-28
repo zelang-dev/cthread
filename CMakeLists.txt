@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8...3.14)
 
 project(
     cthread
-    VERSION 4.0.3
+    VERSION 4.0.5
     DESCRIPTION "Emulated C11 threads and thread pool, with custom malloc replacement."
     HOMEPAGE_URL "https://github.com/zelang-dev/cthread"
     LANGUAGES C
@@ -82,7 +82,6 @@ set(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE 1)
 set(CPACK_VERBATIM_VARIABLES YES)
 
 set(CPACK_PACKAGE_VENDOR "https://github.com/zelang-dev/cthread")
-set(CPACK_PACKAGE_VERSION 4.0.4)
 include(CPack)
 
 set(CMAKE_INSTALL_CONFIG_NAME ${CMAKE_BUILD_TYPE})
