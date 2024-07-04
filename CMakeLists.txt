@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8...3.14)
 
 project(
     cthread
-    VERSION 4.0.6
+    VERSION 4.0.7
     DESCRIPTION "Emulated C11 threads and thread pool, with custom malloc replacement."
     HOMEPAGE_URL "https://github.com/zelang-dev/cthread"
     LANGUAGES C
@@ -86,7 +86,7 @@ include(CPack)
 
 set(CMAKE_INSTALL_CONFIG_NAME ${CMAKE_BUILD_TYPE})
 install(TARGETS ${cthread} DESTINATION lib)
-install(FILES cthread.h rpmalloc.h DESTINATION include )
+install(FILES cthread.h rpmalloc.h c89atomic.h DESTINATION include )
 if(WIN32)
     install(DIRECTORY include/ DESTINATION include )
 endif()

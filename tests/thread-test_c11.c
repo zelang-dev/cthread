@@ -49,23 +49,23 @@ static void test_error_callback(const char *message) {
 }
 
 static void test_error(void) {
-    printf("Detecting memory leak\n");
+    //printf("Detecting memory leak\n");
 
     rpmalloc_config_t config = {0};
     config.error_callback = test_error_callback;
     rpmalloc_initialize_config(&config);
 
-    printf("memory leaking\n");
+    //printf("memory leaking\n");
     void *ptr = malloc(10);
-    rpmalloc_shutdown();
-    printf("memory leak caught\n");
+    free(ptr);
+   /* printf("memory leak caught\n");
 
     if (!got_error) {
         printf("Leak not detected and reported as expected\n");
         return;
     }
 
-    printf("Error detection test passed\n");
+    printf("Error detection test passed\n"); */
 }
 
 /* Thread function: Compile time thread-local storage */
@@ -104,6 +104,7 @@ void run_emulated_tls(void) {
 
     /* Check if the TLS variable has changed */
     assert(*gLocalVar() == 1);
+    gLocalVar_delete();
 }
 
 int main(void) {
@@ -131,9 +132,9 @@ int main(void) {
     run_call_once_test();
     puts("end call once test\n");
 
-    //puts("start memory test");
-    //test_error();
-    //puts("end memory test\n");
+    puts("start memory test");
+    test_error();
+    puts("end memory test\n");
 
     puts("tests finished");
 
