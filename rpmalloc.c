@@ -157,7 +157,6 @@
 #else
 #  include <unistd.h>
 #  include <stdio.h>
-#  include <stdlib.h>
 #  include <time.h>
 #  if defined(__linux__) || defined(__ANDROID__)
 #    include <sys/prctl.h>
@@ -172,10 +171,6 @@
 #    include <mach/mach_vm.h>
 #    include <mach/vm_statistics.h>
 #    endif
-#    include <pthread.h>
-#  endif
-#  if defined(__HAIKU__) || defined(__TINYC__) || defined(FORCED_SPECIFIC)
-#    include <pthread.h>
 #  endif
 #endif
 
@@ -249,13 +244,15 @@ static tls_t _memory_thread_heap = 0;
 //! Initialized flag
 static int _rpmalloc_initialized = 0;
 
-#include "c89atomic.h"
-
 #ifdef _WIN32
+#define EXPECTED(x) (x)
+#define UNEXPECTED(x) (x)
 typedef volatile c89atomic_uint32 atomic32_t;
 typedef volatile c89atomic_uint64 atomic64_t;
 typedef volatile void *atomicptr_t;
 #else
+#define EXPECTED(x) __builtin_expect((x), 1)
+#define UNEXPECTED(x) __builtin_expect((x), 0)
 typedef volatile _Atomic(c89atomic_uint32)atomic32_t;
 typedef volatile _Atomic(c89atomic_uint64)atomic64_t;
 typedef volatile _Atomic(void *)atomicptr_t;
@@ -277,10 +274,6 @@ static FORCEINLINE void *atomic_exchange_ptr_acquire(atomicptr_t *dst, void *val
 static FORCEINLINE int atomic_cas_ptr(atomicptr_t *dst, void *val, void *ref) { return c89atomic_compare_exchange_weak_explicit_64((c89atomic_uint64 *)dst, (c89atomic_uint64 *)&ref, (c89atomic_uint64)val, memory_order_relaxed, memory_order_relaxed); }
 
 #if defined(_MSC_VER) && !defined(__clang__)
-
-#define EXPECTED(x) (x)
-#define UNEXPECTED(x) (x)
-
 #ifdef _WIN32_PLATFORM_X86
 static struct impl_tls_dtor_entry {
     tls_t key;
@@ -341,7 +334,6 @@ FORCEINLINE int rpmalloc_tls_set(tls_t key, void *val) {
     return TlsSetValue(key, val) ? 0 : -1;
 }
 #else
-
 int rpmalloc_tls_create(tls_t *key, tls_dtor_t dtor) {
     if (!key) return -1;
 
@@ -365,12 +357,7 @@ FORCEINLINE int rpmalloc_tls_set(tls_t key, void *val) {
     return FlsSetValue(key, val) ? 0 : -1;
 }
 #endif
-
 #else
-
-#define EXPECTED(x) __builtin_expect((x), 1)
-#define UNEXPECTED(x) __builtin_expect((x), 0)
-
 int rpmalloc_tls_create(tls_t *key, tls_dtor_t dtor) {
     if (!key) return -1;
 
