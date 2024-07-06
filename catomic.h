@@ -29,7 +29,7 @@ Differences With C11
 For practicality, this is not a drop-in replacement for C11's `stdatomic.h`. Below are the main differences
 between c89atomic and stdatomic.
 
-    * All operations require an explicit size which is specified by the name of the function, and only 8-,
+    * All operations require an explicit bit size which is specified by the name of the function, and only 8-,
       16-, 32- and 64-bit operations are supported. Objects of an arbitrary sizes are not supported.
     * Some extra APIs are included:
       - `c89atomic_compare_and_swap_*()`
@@ -247,6 +247,7 @@ The following types and functions are implemented:
 
 #ifndef c89atomic_h
 #define c89atomic_h
+#include <stdint.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -259,23 +260,6 @@ extern "C" {
 #pragma GCC diagnostic ignored "-Wc++11-long-long"
 #endif
 #endif
-
-#define __ATOMIC_RELAXED 0
-#define __ATOMIC_CONSUME 1
-#define __ATOMIC_ACQUIRE 2
-#define __ATOMIC_RELEASE 3
-#define __ATOMIC_ACQ_REL 4
-#define __ATOMIC_SEQ_CST 5
-
-    /* Memory ordering */
-    typedef enum {
-        memory_order_relaxed = __ATOMIC_RELAXED,
-        memory_order_consume = __ATOMIC_CONSUME,
-        memory_order_acquire = __ATOMIC_ACQUIRE,
-        memory_order_release = __ATOMIC_RELEASE,
-        memory_order_acq_rel = __ATOMIC_ACQ_REL,
-        memory_order_seq_cst = __ATOMIC_SEQ_CST,
-    } memory_order;
 
     typedef int c89atomic_memory_order;
 
@@ -2576,6 +2560,135 @@ bit too pedantic with it's warnings. A few notes:
         c89atomic_flag_clear_explicit(pSpinlock, c89atomic_memory_order_release);
     }
 
+#ifndef __ATOMIC_RELAXED
+#   define __ATOMIC_RELAXED 0
+#   define __ATOMIC_CONSUME 1
+#   define __ATOMIC_ACQUIRE 2
+#   define __ATOMIC_RELEASE 3
+#   define __ATOMIC_ACQ_REL 4
+#   define __ATOMIC_SEQ_CST 5
+#endif
+
+    /* Memory ordering */
+    typedef enum {
+        memory_order_relaxed = __ATOMIC_RELAXED,
+        memory_order_consume = __ATOMIC_CONSUME,
+        memory_order_acquire = __ATOMIC_ACQUIRE,
+        memory_order_release = __ATOMIC_RELEASE,
+        memory_order_acq_rel = __ATOMIC_ACQ_REL,
+        memory_order_seq_cst = __ATOMIC_SEQ_CST,
+    } memory_order;
+
+#ifdef _WIN32
+    typedef volatile c89atomic_flag atomic_flag;
+    typedef volatile c89atomic_bool atomic_bool;
+    typedef volatile c89atomic_int8 atomic_char;
+    typedef volatile c89atomic_int8 atomic_schar;
+    typedef volatile c89atomic_uint8 atomic_uchar;
+    typedef volatile c89atomic_int16 atomic_short;
+    typedef volatile c89atomic_uint16 atomic_ushort;
+    typedef volatile c89atomic_int32 atomic_int;
+    typedef volatile c89atomic_uint32 atomic_uint;
+    typedef volatile signed long atomic_long;
+    typedef volatile unsigned long atomic_ulong;
+    typedef volatile c89atomic_int64 atomic_llong;
+    typedef volatile c89atomic_uint64 atomic_ullong;
+    typedef volatile intptr_t atomic_intptr_t;
+    typedef volatile uintptr_t atomic_uintptr_t;
+    typedef volatile size_t atomic_size_t;
+    typedef volatile ptrdiff_t atomic_ptrdiff_t;
+    typedef volatile intmax_t atomic_intmax_t;
+    typedef volatile uintmax_t atomic_uintmax_t;
+    typedef volatile void *atomic_ptr_t;
+#else
+    typedef volatile _Atomic(c89atomic_flag)atomic_flag;
+    typedef volatile _Atomic(c89atomic_bool)atomic_bool;
+    typedef volatile _Atomic(c89atomic_int8)atomic_char;
+    typedef volatile _Atomic(c89atomic_int8)atomic_schar;
+    typedef volatile _Atomic(c89atomic_uint8)atomic_uchar;
+    typedef volatile _Atomic(c89atomic_int16)atomic_short;
+    typedef volatile _Atomic(c89atomic_uint16)atomic_ushort;
+    typedef volatile _Atomic(c89atomic_int32)atomic_int;
+    typedef volatile _Atomic(c89atomic_uint32)atomic_uint;
+    typedef volatile _Atomic(signed long)atomic_long;
+    typedef volatile _Atomic(unsigned long)atomic_ulong;
+    typedef volatile _Atomic(c89atomic_int64)atomic_llong;
+    typedef volatile _Atomic(c89atomic_uint64)atomic_ullong;
+    typedef volatile _Atomic(intptr_t)atomic_intptr_t;
+    typedef volatile _Atomic(uintptr_t)atomic_uintptr_t;
+    typedef volatile _Atomic(size_t)atomic_size_t;
+    typedef volatile _Atomic(ptrdiff_t)atomic_ptrdiff_t;
+    typedef volatile _Atomic(intmax_t)atomic_intmax_t;
+    typedef volatile _Atomic(uintmax_t)atomic_uintmax_t;
+    typedef volatile _Atomic(void *)atomic_ptr_t;
+#endif
+
+/* sets an atomic_flag to true and returns the old value */
+#define atomic_flag_test_and_set(bits, obj)	c89atomic_flag_test_and_set_##bits##(obj)
+/* sets an atomic_flag to true and returns the old value */
+#define atomic_flag_test_and_set_explicit(bits, obj, order)	c89atomic_flag_test_and_set_explicit_##bits##(obj, order)
+/* sets an atomic_flag to false */
+#define atomic_flag_clear	c89atomic_flag_clear
+/* sets an atomic_flag to false */
+#define atomic_flag_clear_explicit	c89atomic_flag_clear_explicit
+
+/* indicates whether the atomic object is lock-free */
+#define atomic_is_lock_free(bits, obj)  c89atomic_is_lock_free_##bits##(obj)
+
+/* generic memory order-dependent fence synchronization primitive */
+#define atomic_thread_fence(order)	c89atomic_thread_fence(order)
+/* fence between a thread and a signal handler executed in the same thread */
+#define atomic_signal_fence(order)	c89atomic_signal_fence(order)
+
+/* stores a value in an atomic object */
+#define atomic_store(bits, obj, desired)	c89atomic_store_##bits##(obj, desired, order)
+/* stores a value in an atomic object */
+#define atomic_store_explicit(bits, obj, desired, order)	c89atomic_store_explicit_##bits##(obj, desired, order)
+
+/* reads a value from an atomic object */
+#define atomic_load(bits, obj)	c89atomic_load_##bits##(obj)
+/* reads a value from an atomic object */
+#define atomic_load_explicit(bits, obj, order)	c89atomic_load_explicit_##bits##(obj, order)
+
+/* swaps a value with the value of an atomic object */
+#define atomic_exchange(bits, obj, desired)	c89atomic_exchange_##bits##(obj, desired)
+/* swaps a value with the value of an atomic object */
+#define atomic_exchange_explicit(bits, obj, desired, order)	c89atomic_exchange_explicit_##bits##(obj, desired, order)
+
+/* swaps a value with an atomic object if the old value is what is expected, otherwise reads the old value */
+#define atomic_compare_exchange_weak(bits, obj, expected, desired)	c89atomic_exchange_##bits##(obj, expected, desired)
+/* swaps a value with an atomic object if the old value is what is expected, otherwise reads the old value */
+#define atomic_compare_exchange_weak_explicit(bits, obj, expected, desired, succ, fail)	c89atomic_exchange_explicit_##bits##(obj, expected, desired, succ, fail)
+
+/* swaps a value with an atomic object if the old value is what is expected, otherwise reads the old value */
+#define atomic_compare_exchange_strong(bits, obj, expected, desired)	c89atomic_compare_exchange_strong_##bits##(obj, expected, desired)
+/* swaps a value with an atomic object if the old value is what is expected, otherwise reads the old value */
+#define atomic_compare_exchange_strong_explicit(bits, obj, expected, desired, succ, fail)	c89atomic_compare_exchange_strong_explicit_##bits##(obj, expected, desired, succ, fail)
+
+/* atomic addition */
+#define atomic_fetch_add(bits, obj, arg)	c89atomic_fetch_add_##bits##(obj, arg)
+/* atomic addition */
+#define atomic_fetch_add_explicit(bits, obj, arg, order)	c89atomic_fetch_add_explicit_##bits##(obj, arg, order)
+
+/* atomic subtraction */
+#define atomic_fetch_sub(bits, obj, arg)	c89atomic_fetch_sub_##bits##(obj, arg)
+/* atomic subtraction */
+#define atomic_fetch_sub_explicit(bits, obj, arg, order)	c89atomic_fetch_sub_explicit_##bits##(obj, arg, order)
+
+/* atomic bitwise OR */
+#define atomic_fetch_or(bits, obj, arg)	c89atomic_fetch_or_##bits##(obj, arg)
+/* atomic bitwise OR */
+#define atomic_fetch_or_explicit(bits, obj, arg, order)	c89atomic_fetch_or_explicit_##bits##(obj, arg, order)
+
+/* atomic bitwise exclusive OR */
+#define atomic_fetch_xor(bits, obj, arg)	c89atomic_fetch_xor_##bits##(obj, arg)
+/* atomic bitwise exclusive OR */
+#define atomic_fetch_xor_explicit(bits, obj, arg, order)	c89atomic_fetch_xor_explicit_##bits##(obj, arg, order)
+
+/* atomic bitwise AND */
+#define atomic_fetch_and(bits, obj, arg)	c89atomic_fetch_and_##bits##(obj, arg)
+/* atomic bitwise AND */
+#define atomic_fetch_and_explicit(bits, obj, arg, order)	c89atomic_fetch_and_explicit_##bits##(obj, arg, order)
 
 #if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
 #pragma GCC diagnostic pop  /* long long warnings with Clang. */

@@ -307,6 +307,7 @@ typedef pthread_key_t tls_t;
 typedef void (*tls_dtor_t)(void *);
 #endif
 #include <stdlib.h>
+#include "catomic.h"
 
 C_API int rpmalloc_tls_create(tls_t *key, tls_dtor_t dtor);
 C_API void rpmalloc_tls_delete(tls_t key);
