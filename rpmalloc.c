@@ -273,8 +273,26 @@ static FORCEINLINE void atomic_store_ptr_release(atomicptr_t *dst, void *val) { 
 static FORCEINLINE void *atomic_exchange_ptr_acquire(atomicptr_t *dst, void *val) { return (void *)c89atomic_exchange_explicit_64((c89atomic_uint64 *)dst, (c89atomic_uint64)val, memory_order_acquire); }
 static FORCEINLINE int atomic_cas_ptr(atomicptr_t *dst, void *val, void *ref) { return c89atomic_compare_exchange_weak_explicit_64((c89atomic_uint64 *)dst, (c89atomic_uint64 *)&ref, (c89atomic_uint64)val, memory_order_relaxed, memory_order_relaxed); }
 
-#if defined(_MSC_VER) && !defined(__clang__)
-#ifdef _WIN32_PLATFORM_X86
+#if defined(__TINYC__) || !defined(_WIN32)
+int rpmalloc_tls_create(tls_t *key, tls_dtor_t dtor) {
+    if (!key) return -1;
+
+    return (pthread_key_create(key, dtor) == 0) ? 0 : -1;
+}
+
+FORCEINLINE void rpmalloc_tls_delete(tls_t key) {
+    pthread_key_delete(key);
+}
+
+FORCEINLINE void *rpmalloc_tls_get(tls_t key) {
+    return pthread_getspecific(key);
+}
+
+FORCEINLINE int rpmalloc_tls_set(tls_t key, void *val) {
+    return (pthread_setspecific(key, val) == 0) ? 0 : -1;
+}
+
+#elif defined(_WIN32_PLATFORM_X86)
 static struct impl_tls_dtor_entry {
     tls_t key;
     tls_dtor_t dtor;
@@ -355,25 +373,6 @@ FORCEINLINE void *rpmalloc_tls_get(tls_t key) {
 
 FORCEINLINE int rpmalloc_tls_set(tls_t key, void *val) {
     return FlsSetValue(key, val) ? 0 : -1;
-}
-#endif
-#else
-int rpmalloc_tls_create(tls_t *key, tls_dtor_t dtor) {
-    if (!key) return -1;
-
-    return (pthread_key_create(key, dtor) == 0) ? 0 : -1;
-}
-
-FORCEINLINE void rpmalloc_tls_delete(tls_t key) {
-    pthread_key_delete(key);
-}
-
-FORCEINLINE void *rpmalloc_tls_get(tls_t key) {
-    return pthread_getspecific(key);
-}
-
-FORCEINLINE int rpmalloc_tls_set(tls_t key, void *val) {
-    return (pthread_setspecific(key, val) == 0) ? 0 : -1;
 }
 #endif
 
@@ -695,7 +694,12 @@ static heap_t *_memory_orphan_heaps;
 
 static inline heap_t *
 get_thread_heap_raw(void) {
+
+#if defined(__TINYC__) || !defined(_WIN32)
+    return (heap_t *)pthread_getspecific(_memory_thread_heap);
+#else
     return (heap_t *)rpmalloc_tls_get(_memory_thread_heap);
+#endif
 }
 
 //! Get the current thread heap
@@ -715,21 +719,19 @@ get_thread_heap(void) {
 //! Fast thread ID
 static inline uintptr_t
 get_thread_id(void) {
-#if defined(_WIN32)
-	return (uintptr_t)((void*)NtCurrentTeb());
-#else
+#if defined(__TINYC__) || !defined(_WIN32)
     uintptr_t tid;
-#  if defined(__i386__)
+#  if defined(__i386__) && !defined(_WIN32)
     __asm__("movl %%gs:0, %0" : "=r" (tid) : : );
-#  elif defined(__x86_64__)
+#  elif defined(__x86_64__) && !defined(_WIN32)
 #    if defined(__MACH__)
     __asm__("movq %%gs:0, %0" : "=r" (tid) : : );
 #    else
     __asm__("movq %%fs:0, %0" : "=r" (tid) : : );
 #    endif
-#  elif defined(__arm__)
+#  elif defined(__arm__) && !defined(_WIN32)
     __asm__ volatile ("mrc p15, 0, %0, c13, c0, 3" : "=r" (tid));
-#  elif defined(__aarch64__)
+#  elif defined(__aarch64__) && !defined(_WIN32)
 #    if defined(__MACH__)
     // tpidr_el0 likely unused, always return 0 on iOS
     __asm__ volatile ("mrs %0, tpidrro_el0" : "=r" (tid));
@@ -739,16 +741,22 @@ get_thread_id(void) {
 #  else
     tid = (uintptr_t)pthread_self();
 #  endif
-	return tid;
+    return tid;
+#else
+    return (uintptr_t)((void *)NtCurrentTeb());
 #endif
 }
 
 //! Set the current thread heap
 static void
-set_thread_heap(heap_t* heap) {
+set_thread_heap(heap_t *heap) {
+#if defined(__TINYC__) || !defined(_WIN32)
+    pthread_setspecific(_memory_thread_heap, (void *)heap);
+#else
     rpmalloc_tls_set(_memory_thread_heap, (void *)heap);
-	if (heap)
-		heap->owner_thread = get_thread_id();
+#endif
+    if (heap)
+        heap->owner_thread = get_thread_id();
 }
 
 //! Set main thread ID
@@ -2777,16 +2785,21 @@ rpmalloc_initialize_config(const rpmalloc_config_t* config) {
 	_memory_config.span_map_count = _memory_span_map_count;
 	_memory_config.enable_huge_pages = _memory_huge_pages;
 
-#if defined(_WIN32)
-#ifdef _WIN32_PLATFORM_X86
+#if defined(__TINYC__) || !defined(_WIN32)
+#if !defined(_WIN32)
+    if (pthread_key_create(&_memory_thread_heap, _rpmalloc_heap_release_raw_fc) != 0)
+        return -1;
+#else
+    if (pthread_key_create(&_memory_thread_heap, _rpmalloc_thread_destructor) != 0)
+        return -1;
+#endif
+#else
+#if defined(_WIN32_PLATFORM_X86)
     fls_key = FlsAlloc(&_rpmalloc_thread_destructor);
 #else
     if (rpmalloc_tls_create(&_memory_thread_heap, _rpmalloc_thread_destructor) != 0)
         return -1;
 #endif
-#else
-    if (rpmalloc_tls_create(&_memory_thread_heap, _rpmalloc_heap_release_raw_fc) != 0)
-        return -1;
 #endif
 
 	//Setup all small and medium size classes
@@ -2857,11 +2870,16 @@ rpmalloc_finalize(void) {
 		_rpmalloc_global_cache_finalize(&_memory_span_cache[iclass]);
 #endif
 
-	_rpmalloc_initialized = 0;
+    _rpmalloc_initialized = 0;
+
+#if defined(__TINYC__) || !defined(_WIN32)
+    pthread_key_delete(_memory_thread_heap);
+#else
     rpmalloc_tls_delete(_memory_thread_heap);
 #ifdef _WIN32_PLATFORM_X86
     FlsFree(fls_key);
     fls_key = 0;
+#endif
 #endif
 }
 

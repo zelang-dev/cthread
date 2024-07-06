@@ -291,7 +291,17 @@ rpmalloc_linker_reference(void);
 #   define C_API extern
 #endif
 
-#if defined(_WIN32) && defined(_MSC_VER)
+#if defined(__TINYC__) || !defined(_WIN32)
+#if defined(_WIN32)
+#   include <windows.h>
+#   include "pthread.h"
+#else
+#   include <pthread.h>
+#endif
+
+typedef pthread_key_t tls_t;
+typedef void (*tls_dtor_t)(void *);
+#else
 #include <windows.h>
 typedef DWORD tls_t;
 #ifdef _WIN32_PLATFORM_X86
@@ -301,10 +311,6 @@ typedef void (*tls_dtor_t)(void *);
 #else
 typedef void(__stdcall *tls_dtor_t)(PVOID lpFlsData);
 #endif
-#else
-#include <pthread.h>
-typedef pthread_key_t tls_t;
-typedef void (*tls_dtor_t)(void *);
 #endif
 #include <stdlib.h>
 #include "catomic.h"

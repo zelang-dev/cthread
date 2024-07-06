@@ -261,6 +261,25 @@ extern "C" {
 #endif
 #endif
 
+#ifndef __ATOMIC_RELAXED
+#   define __ATOMIC_RELAXED 0
+#   define __ATOMIC_CONSUME 1
+#   define __ATOMIC_ACQUIRE 2
+#   define __ATOMIC_RELEASE 3
+#   define __ATOMIC_ACQ_REL 4
+#   define __ATOMIC_SEQ_CST 5
+#endif
+
+    /* Memory ordering */
+    typedef enum {
+        memory_order_relaxed = __ATOMIC_RELAXED,
+        memory_order_consume = __ATOMIC_CONSUME,
+        memory_order_acquire = __ATOMIC_ACQUIRE,
+        memory_order_release = __ATOMIC_RELEASE,
+        memory_order_acq_rel = __ATOMIC_ACQ_REL,
+        memory_order_seq_cst = __ATOMIC_SEQ_CST,
+    } memory_order;
+
     typedef int c89atomic_memory_order;
 
     /* Sized Types */
@@ -2560,24 +2579,6 @@ bit too pedantic with it's warnings. A few notes:
         c89atomic_flag_clear_explicit(pSpinlock, c89atomic_memory_order_release);
     }
 
-#ifndef __ATOMIC_RELAXED
-#   define __ATOMIC_RELAXED 0
-#   define __ATOMIC_CONSUME 1
-#   define __ATOMIC_ACQUIRE 2
-#   define __ATOMIC_RELEASE 3
-#   define __ATOMIC_ACQ_REL 4
-#   define __ATOMIC_SEQ_CST 5
-#endif
-
-    /* Memory ordering */
-    typedef enum {
-        memory_order_relaxed = __ATOMIC_RELAXED,
-        memory_order_consume = __ATOMIC_CONSUME,
-        memory_order_acquire = __ATOMIC_ACQUIRE,
-        memory_order_release = __ATOMIC_RELEASE,
-        memory_order_acq_rel = __ATOMIC_ACQ_REL,
-        memory_order_seq_cst = __ATOMIC_SEQ_CST,
-    } memory_order;
 
 #ifdef _WIN32
     typedef volatile c89atomic_flag atomic_flag;
@@ -2624,16 +2625,16 @@ bit too pedantic with it's warnings. A few notes:
 #endif
 
 /* sets an atomic_flag to true and returns the old value */
-#define atomic_flag_test_and_set(bits, obj)	c89atomic_flag_test_and_set_##bits##(obj)
+#define atomic_flag_test_and_set(bits, obj)	c89atomic_flag_test_and_set_##bits(obj)
 /* sets an atomic_flag to true and returns the old value */
-#define atomic_flag_test_and_set_explicit(bits, obj, order)	c89atomic_flag_test_and_set_explicit_##bits##(obj, order)
+#define atomic_flag_test_and_set_explicit(bits, obj, order)	c89atomic_flag_test_and_set_explicit_##bits(obj, order)
 /* sets an atomic_flag to false */
 #define atomic_flag_clear	c89atomic_flag_clear
 /* sets an atomic_flag to false */
 #define atomic_flag_clear_explicit	c89atomic_flag_clear_explicit
 
 /* indicates whether the atomic object is lock-free */
-#define atomic_is_lock_free(bits, obj)  c89atomic_is_lock_free_##bits##(obj)
+#define atomic_is_lock_free(bits, obj)  c89atomic_is_lock_free_##bits(obj)
 
 /* generic memory order-dependent fence synchronization primitive */
 #define atomic_thread_fence(order)	c89atomic_thread_fence(order)
@@ -2641,54 +2642,54 @@ bit too pedantic with it's warnings. A few notes:
 #define atomic_signal_fence(order)	c89atomic_signal_fence(order)
 
 /* stores a value in an atomic object */
-#define atomic_store(bits, obj, desired)	c89atomic_store_##bits##(obj, desired, order)
+#define atomic_store(bits, obj, desired)	c89atomic_store_##bits(obj, desired, order)
 /* stores a value in an atomic object */
-#define atomic_store_explicit(bits, obj, desired, order)	c89atomic_store_explicit_##bits##(obj, desired, order)
+#define atomic_store_explicit(bits, obj, desired, order)	c89atomic_store_explicit_##bits(obj, desired, order)
 
 /* reads a value from an atomic object */
-#define atomic_load(bits, obj)	c89atomic_load_##bits##(obj)
+#define atomic_load(bits, obj)	c89atomic_load_##bits(obj)
 /* reads a value from an atomic object */
-#define atomic_load_explicit(bits, obj, order)	c89atomic_load_explicit_##bits##(obj, order)
+#define atomic_load_explicit(bits, obj, order)	c89atomic_load_explicit_##bits(obj, order)
 
 /* swaps a value with the value of an atomic object */
-#define atomic_exchange(bits, obj, desired)	c89atomic_exchange_##bits##(obj, desired)
+#define atomic_exchange(bits, obj, desired)	c89atomic_exchange_##bits(obj, desired)
 /* swaps a value with the value of an atomic object */
-#define atomic_exchange_explicit(bits, obj, desired, order)	c89atomic_exchange_explicit_##bits##(obj, desired, order)
+#define atomic_exchange_explicit(bits, obj, desired, order)	c89atomic_exchange_explicit_##bits(obj, desired, order)
 
 /* swaps a value with an atomic object if the old value is what is expected, otherwise reads the old value */
-#define atomic_compare_exchange_weak(bits, obj, expected, desired)	c89atomic_exchange_##bits##(obj, expected, desired)
+#define atomic_compare_exchange_weak(bits, obj, expected, desired)	c89atomic_exchange_##bits(obj, expected, desired)
 /* swaps a value with an atomic object if the old value is what is expected, otherwise reads the old value */
-#define atomic_compare_exchange_weak_explicit(bits, obj, expected, desired, succ, fail)	c89atomic_exchange_explicit_##bits##(obj, expected, desired, succ, fail)
+#define atomic_compare_exchange_weak_explicit(bits, obj, expected, desired, succ, fail)	c89atomic_exchange_explicit_##bits(obj, expected, desired, succ, fail)
 
 /* swaps a value with an atomic object if the old value is what is expected, otherwise reads the old value */
-#define atomic_compare_exchange_strong(bits, obj, expected, desired)	c89atomic_compare_exchange_strong_##bits##(obj, expected, desired)
+#define atomic_compare_exchange_strong(bits, obj, expected, desired)	c89atomic_compare_exchange_strong_##bits(obj, expected, desired)
 /* swaps a value with an atomic object if the old value is what is expected, otherwise reads the old value */
-#define atomic_compare_exchange_strong_explicit(bits, obj, expected, desired, succ, fail)	c89atomic_compare_exchange_strong_explicit_##bits##(obj, expected, desired, succ, fail)
+#define atomic_compare_exchange_strong_explicit(bits, obj, expected, desired, succ, fail)	c89atomic_compare_exchange_strong_explicit_##bits(obj, expected, desired, succ, fail)
 
 /* atomic addition */
-#define atomic_fetch_add(bits, obj, arg)	c89atomic_fetch_add_##bits##(obj, arg)
+#define atomic_fetch_add(bits, obj, arg)	c89atomic_fetch_add_##bits(obj, arg)
 /* atomic addition */
-#define atomic_fetch_add_explicit(bits, obj, arg, order)	c89atomic_fetch_add_explicit_##bits##(obj, arg, order)
+#define atomic_fetch_add_explicit(bits, obj, arg, order)	c89atomic_fetch_add_explicit_##bits(obj, arg, order)
 
 /* atomic subtraction */
-#define atomic_fetch_sub(bits, obj, arg)	c89atomic_fetch_sub_##bits##(obj, arg)
+#define atomic_fetch_sub(bits, obj, arg)	c89atomic_fetch_sub_##bits(obj, arg)
 /* atomic subtraction */
-#define atomic_fetch_sub_explicit(bits, obj, arg, order)	c89atomic_fetch_sub_explicit_##bits##(obj, arg, order)
+#define atomic_fetch_sub_explicit(bits, obj, arg, order)	c89atomic_fetch_sub_explicit_##bits(obj, arg, order)
 
 /* atomic bitwise OR */
-#define atomic_fetch_or(bits, obj, arg)	c89atomic_fetch_or_##bits##(obj, arg)
+#define atomic_fetch_or(bits, obj, arg)	c89atomic_fetch_or_##bits(obj, arg)
 /* atomic bitwise OR */
-#define atomic_fetch_or_explicit(bits, obj, arg, order)	c89atomic_fetch_or_explicit_##bits##(obj, arg, order)
+#define atomic_fetch_or_explicit(bits, obj, arg, order)	c89atomic_fetch_or_explicit_##bits(obj, arg, order)
 
 /* atomic bitwise exclusive OR */
-#define atomic_fetch_xor(bits, obj, arg)	c89atomic_fetch_xor_##bits##(obj, arg)
+#define atomic_fetch_xor(bits, obj, arg)	c89atomic_fetch_xor_##bits(obj, arg)
 /* atomic bitwise exclusive OR */
-#define atomic_fetch_xor_explicit(bits, obj, arg, order)	c89atomic_fetch_xor_explicit_##bits##(obj, arg, order)
+#define atomic_fetch_xor_explicit(bits, obj, arg, order)	c89atomic_fetch_xor_explicit_##bits(obj, arg, order)
 
 /* atomic bitwise AND */
-#define atomic_fetch_and(bits, obj, arg)	c89atomic_fetch_and_##bits##(obj, arg)
+#define atomic_fetch_and(bits, obj, arg)	c89atomic_fetch_and_##bits(obj, arg)
 /* atomic bitwise AND */
-#define atomic_fetch_and_explicit(bits, obj, arg, order)	c89atomic_fetch_and_explicit_##bits##(obj, arg, order)
+#define atomic_fetch_and_explicit(bits, obj, arg, order)	c89atomic_fetch_and_explicit_##bits(obj, arg, order)
 
 #if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
 #pragma GCC diagnostic pop  /* long long warnings with Clang. */
