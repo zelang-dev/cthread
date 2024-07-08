@@ -7,9 +7,9 @@ The **Windows** build in **_deps_** folder, _this fork has ABI differences,_ see
 
 > This branch has some changes to be able to be compiled using [Tiny C compiler](https://github.com/zelang-dev/tinycc).
 
-**CThread** is a minimal, portable implementation of basic threading classes for C. They closely mimic the functionality and naming of the [C11 standard](https://en.cppreference.com/w/c/thread), and should be easily replaceable with the corresponding standard variants.
+**CThread** is a minimal, portable implementation of basic threading classes for C. They closely mimic the functionality and naming of the [C11 standard](https://en.cppreference.com/w/c/thread), and should be easily replaceable with the corresponding standard variants. This package also integrates **C89 compatible atomics** for [C11 Atomic](https://en.cppreference.com/w/c/atomic) support, as macros with an additional first parameter as **bit size**, `atomic_compare_exchange_weak(bits, obj, expected, desired)`.
 
-The `malloc` replacement [rpmalloc](https://github.com/zelang-dev/rpmalloc) package also implements emulated **Thread-local storage** via macro ***thread_storage(type, variable)*** as:
+All `malloc` operations are [lockless](https://preshing.com/20120612/an-introduction-to-lock-free-programming/), and also implements emulated **Thread-local storage** via macro ***thread_storage(type, variable)*** as:
 
 _example.h_
 ```h
