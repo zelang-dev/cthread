@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-atomic_int acnt = 0;
-int cnt = 0;
+atomic_size_t acnt;
+size_t cnt = 0;
 
 int f(void *thr_data) {
     (void)thr_data;
@@ -15,7 +15,7 @@ int f(void *thr_data) {
         ++cnt;
         // ++acnt;
         // for this example, relaxed memory order is sufficient, e.g.
-        atomic_fetch_add_explicit(i32, &acnt, 1, memory_order_relaxed);
+        atomic_fetch_add(&acnt, 1);
     }
     return 0;
 }
@@ -38,8 +38,8 @@ int main(void) {
     }
 
     printf("Found atomicity, took %d tries!\n", counter);
-    printf("The atomic counter is %u\n", acnt);
-    printf("The non-atomic counter is %u\n", cnt);
+    printf("The atomic counter is %zu\n", acnt);
+    printf("The non-atomic counter is %zu\n", cnt);
 
     return 0;
 }
