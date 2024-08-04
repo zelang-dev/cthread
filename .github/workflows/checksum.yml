@@ -14,13 +14,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: release-artifacts
+          path: release
       - name: Generate checksum
         uses: jmgilman/actions-generate-checksum@v1
         with:
             method: md5
             patterns: |
-                *.zip
-                *.tar.gz
+                release/*.zip
+                release/*.tar.gz
       - name: Upload checksum
         uses: svenstaro/upload-release-action@v2
         with:
