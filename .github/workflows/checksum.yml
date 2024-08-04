@@ -9,7 +9,7 @@ on:
       - "v*.*.*"
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,12 +26,10 @@ jobs:
             patterns: |
                 release/*.zip
                 release/*.tar.gz
-      - name: Upload checksum
-        uses: svenstaro/upload-release-action@v2
+      - name: Create release
+        uses: softprops/action-gh-release@v1
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: checksum.txt
-          asset_name: md5.txt
-          tag: ${{ github.ref }}
-          overwrite: true
-          file_glob: true
+          files: |
+            checksum.txt
+            release/*.zip
+            release/*.tar.gz
