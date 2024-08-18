@@ -4,7 +4,8 @@
 
 typedef enum {
     immediate_shutdown = 1,
-    graceful_shutdown = 2
+    graceful_shutdown,
+    terminate_shutdown
 } pool_shutdown_t;
 
 /* The work struct */
@@ -152,7 +153,7 @@ int thrd_add(thrd_pool_t *pool, void (*function)(void *),
 }
 
 int thrd_destroy(thrd_pool_t *pool, int flags) {
-    int i, err = 0;
+    int i, err = 0, kill_flag = flags;
 
     if (pool == NULL) {
         return pool_invalid;
@@ -168,7 +169,7 @@ int thrd_destroy(thrd_pool_t *pool, int flags) {
             err = pool_shutdown;
             break;
         }
-
+        flags = kill_flag == pool_kill ? 0 : flags;
         pool->shutdown = (flags & pool_graceful) ?
             graceful_shutdown : immediate_shutdown;
 
@@ -181,7 +182,9 @@ int thrd_destroy(thrd_pool_t *pool, int flags) {
 
         /* Join all worker thread */
         for (i = 0; i < pool->thread_count; i++) {
-            if (thrd_join(pool->threads[i], NULL) != thrd_success) {
+            if (kill_flag == pool_kill)
+                err = pthread_cancel(pool->threads[i]);
+            else if (thrd_join(pool->threads[i], NULL) != thrd_success) {
                 err = pool_thread_failure;
             }
         }
