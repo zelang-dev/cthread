@@ -458,11 +458,11 @@ extern "C" {
         prefix int thrd_##var##_tls = 0;                    \
         prefix tss_t thrd_##var##_tss = 0;                  \
         thrd_local_del(type, var, initial, prefix)          \
-        prefix FORCEINLINE void var##_update(type value) {  \
-            *var() = value;                                 \
+        prefix FORCEINLINE void var##_update(type *value) {  \
+            *var() = *value;                                 \
         }                                                   \
         prefix FORCEINLINE bool is_##var##_empty(void) {    \
-            return (type *)tss_get(thrd_##var##_tss) == initial;     \
+            return (type *)tss_get(thrd_##var##_tss) == (type *)initial;     \
         }
 
     /* Initialize and setup thread local storage `var name` as functions. */
