@@ -59,7 +59,7 @@ thrd_pool_t *thrd_pool(int thread_count, int queue_size) {
     thrd_pool_t *pool;
     int i;
 
-    if ((pool = (thrd_pool_t *)C11_MALLOC(sizeof(thrd_pool_t))) == NULL) {
+    if ((pool = (thrd_pool_t *)ZE_MALLOC(sizeof(thrd_pool_t))) == NULL) {
         goto err;
     }
 
@@ -71,8 +71,8 @@ thrd_pool_t *thrd_pool(int thread_count, int queue_size) {
     pool->num_working = 0;
 
     /* Allocate thread and task queue */
-    pool->threads = (thrd_t *)C11_MALLOC(sizeof(thrd_t) * thread_count);
-    pool->queue = (pool_task_t *)C11_MALLOC
+    pool->threads = (thrd_t *)ZE_MALLOC(sizeof(thrd_t) * thread_count);
+    pool->queue = (pool_task_t *)ZE_MALLOC
     (sizeof(pool_task_t) * queue_size);
 
     /* Initialize mutex and conditional variable first */
@@ -204,8 +204,8 @@ int thrd_free(thrd_pool_t *pool) {
 
     /* Did we manage to allocate ? */
     if (pool->threads) {
-        C11_FREE(pool->threads);
-        C11_FREE(pool->queue);
+        ZE_FREE(pool->threads);
+        ZE_FREE(pool->queue);
 
         mtx_destroy(&(pool->lock));
         cnd_destroy(&(pool->notify));
@@ -213,7 +213,7 @@ int thrd_free(thrd_pool_t *pool) {
         mtx_destroy(&(pool->count_lock));
         cnd_destroy(&(pool->all_idle));
     }
-    C11_FREE(pool);
+    ZE_FREE(pool);
     return 0;
 }
 

@@ -141,7 +141,7 @@ static void *_thrd_wrapper_function(void *aArg) {
     arg = ti->mArg;
 
     /* The thread is responsible for freeing the startup information */
-    C11_FREE((void *)ti);
+    ZE_FREE((void *)ti);
 
     /* Call the actual client thread function */
     res = fun(arg);
@@ -152,7 +152,7 @@ static void *_thrd_wrapper_function(void *aArg) {
 int thrd_create(thrd_t *thr, thrd_start_t func, void *arg) {
     /* Fill out the thread startup information (passed to the thread wrapper,
        which will eventually free it) */
-    _thread_start_info *ti = (_thread_start_info *)C11_MALLOC(sizeof(_thread_start_info));
+    _thread_start_info *ti = (_thread_start_info *)ZE_MALLOC(sizeof(_thread_start_info));
     if (ti == NULL) {
         return thrd_nomem;
     }
@@ -161,7 +161,7 @@ int thrd_create(thrd_t *thr, thrd_start_t func, void *arg) {
 
     /* Create the thread */
     if (pthread_create(thr, NULL, _thrd_wrapper_function, (void *)ti) != 0) {
-        C11_FREE(ti);
+        ZE_FREE(ti);
         return thrd_error;
     }
 
