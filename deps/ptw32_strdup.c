@@ -38,10 +38,7 @@
  */
 
 #include <string.h>
-/*
 #include <stdlib.h>
-*/
-#include "../rpmalloc.h"
 
 char *
 ptw32_strdup (const char *s)
