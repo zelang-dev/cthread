@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8...3.14)
 
 project(
     cthread
-    VERSION 4.0.1.15
+    VERSION 4.0.1.16
     DESCRIPTION "Emulated C11 threads and thread pool, with custom malloc replacement."
     HOMEPAGE_URL "https://github.com/zelang-dev/cthread"
     LANGUAGES C
@@ -41,6 +41,7 @@ if(BUILD_SHARED_LIBS)
     add_library(cthread SHARED ${cthread_files})
 else()
     add_library(cthread STATIC ${cthread_files})
+    add_definitions(-DPTW32_STATIC_LIB=1)
 endif()
 
 if(UNIX)
@@ -50,7 +51,7 @@ if(UNIX)
     target_link_libraries(cthread PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 else()
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /D ENABLE_ASSERTS=1 ")
-    add_definitions(-DPTW32_CLEANUP_SEH -D_CRT_SECURE_NO_DEPRECATE)
+    add_definitions(-DPTW32_CLEANUP_SEH=1 -D_CRT_SECURE_NO_DEPRECATE)
     add_definitions("/wd4244 /wd4267 /wd4033 /wd4715")
 	add_subdirectory(deps)
     target_include_directories(cthread AFTER PUBLIC
