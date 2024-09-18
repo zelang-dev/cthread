@@ -46,5 +46,4 @@
 #endif
 
 #define __PTHREAD_JUMBO_BUILD__ 1
-#include "../rpmalloc.c"
 #include "pthread.c"
