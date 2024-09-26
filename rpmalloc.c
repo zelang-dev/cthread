@@ -62,7 +62,7 @@
 
 #if __has_builtin(__builtin_assume)
 #define rpmalloc_assume(cond) __builtin_assume(cond)
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) && !defined(__APPLE__)
 #define rpmalloc_assume(cond) 												\
 	do {														\
 		if (!__builtin_expect(cond, 0))										\
@@ -93,10 +93,6 @@
 #ifndef ENABLE_ASSERTS
 //! Enable asserts
 #define ENABLE_ASSERTS            0
-#endif
-#ifndef ENABLE_PRELOAD
-//! Support preloading
-#define ENABLE_PRELOAD            0
 #endif
 #ifndef DISABLE_UNMAP
 //! Disable unmapping memory pages (also enables unlimited cache)
