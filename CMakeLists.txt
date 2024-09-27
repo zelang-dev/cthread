@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8...3.14)
 
 project(
     cthread
-    VERSION 4.0.1.19
+    VERSION 4.0.2.0
     DESCRIPTION "Emulated C11 threads and thread pool, with custom malloc replacement."
     HOMEPAGE_URL "https://github.com/zelang-dev/cthread"
     LANGUAGES C
