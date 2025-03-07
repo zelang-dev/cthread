@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8...3.14)
 
 project(
     cthread
-    VERSION 4.1.0.5
+    VERSION 4.1.0.6
     DESCRIPTION "Emulated C11 threads, compatibility C11 atomics, with custom malloc replacement."
     HOMEPAGE_URL "https://github.com/zelang-dev/cthread"
     LANGUAGES C
@@ -48,7 +48,11 @@ if(UNIX)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -D ENABLE_ASSERTS=1 ")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -fomit-frame-pointer -Wno-return-type")
     find_package(Threads)
-    target_link_libraries(cthread PUBLIC ${CMAKE_THREAD_LIBS_INIT} atomic)
+    if(APPLE)
+        target_link_libraries(cthread PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+    else()
+        target_link_libraries(cthread PUBLIC ${CMAKE_THREAD_LIBS_INIT} atomic)
+    endif()
 else()
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /D ENABLE_ASSERTS=1 ")
     add_definitions(-DPTW32_CLEANUP_SEH=1 -D_CRT_SECURE_NO_DEPRECATE)
