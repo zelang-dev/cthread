@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8...3.14)
 
 project(
     cthread
-    VERSION 4.1.0.6
+    VERSION 4.1.0.7
     DESCRIPTION "Emulated C11 threads, compatibility C11 atomics, with custom malloc replacement."
     HOMEPAGE_URL "https://github.com/zelang-dev/cthread"
     LANGUAGES C
@@ -15,7 +15,7 @@ include(GNUInstallDirs)
 message("Generated with config types: ${CMAKE_CONFIGURATION_TYPES}")
 
 if(WIN32)
-    if($ENV{Platform} STREQUAL x86)
+    if($ENV{Platform} MATCHES x86)
         message("Building Windows x86-32bit")
         add_definitions(-D_WIN32_PLATFORM_X86=1)
     endif()
